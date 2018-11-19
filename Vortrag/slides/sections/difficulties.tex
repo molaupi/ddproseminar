@@ -1,0 +1,23 @@
+\subsection{Interference}
+\begin{frame}{Difficulty \hashtag 1: Interference}
+	\begin{itemize}
+		\item $ddsimple$ works for single failure inducing-changes.
+			\begin{itemize}
+				\item In each recursion step it applies only the set of changes known to contain a failure inducing change.
+			\end{itemize}
+		\item But what if two changes exist that individually pass the tests but their combination induces failure?
+	\end{itemize}
+
+	\begin{alertblock}{Difficulty \hashtag 1: Interference}
+		Let $c_1,c_2 \in \C$. $c_1$ and $c_2$ \textbf{interfere} when $test(c_1)=\cmark$, $test(c_2)=\cmark$ but $test(c_1\cup c_2) = \xmark$.
+	\end{alertblock}
+
+	\begin{exampleblock}{Idea: Leave one set of changes applied}
+		If a configuration $c = c_1 \cup c_2$ with $test(c_1)=\cmark$ and $test(c_2)=\cmark$ is found by $simpledd$ then run $simpledd$ on $c_1$ while leaving $c_2$ applied and vice versa.
+	\end{exampleblock}
+\end{frame}
+
+\subsection{Inconsistency}
+\begin{frame}{Difficulty \hashtag 2: Inconsistency}
+	
+\end{frame}
