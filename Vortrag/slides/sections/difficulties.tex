@@ -12,12 +12,55 @@
 		Let $c_1,c_2 \in \C$. $c_1$ and $c_2$ \textbf{interfere} when $test(c_1)=\cmark$, $test(c_2)=\cmark$ but $test(c_1\cup c_2) = \xmark$.
 	\end{alertblock}
 
+\end{frame}
+
+\begin{frame}{Difficulty \hashtag 1: Interference}
 	\begin{exampleblock}{Idea: Leave one set of changes applied}
-		If a configuration $c = c_1 \cup c_2$ with $test(c_1)=\cmark$ and $test(c_2)=\cmark$ is found by $simpledd$ then run $simpledd$ on $c_1$ while leaving $c_2$ applied and vice versa.
+		If a configuration $c = c_1 \cup c_2$ with $test(c_1)=\cmark$ and $test(c_2)=\cmark$ is found by $simpledd$ interference between $c_1$ and $c_2$ has been detected. Run $simpledd$ on $c_1$ while leaving $c_2$ applied and vice versa.
 	\end{exampleblock}
+
+	\bigskip
+
+	%If we add this case to the $simpledd$ algorithm it leaves us with Andreas Zellers $dd$ algorithm: $dd(c: 2^{\C}) = dd_2(c,\emptyset) \text{, where}$\\[1em]
+
+	\begin{algorithmic}[1]
+		\Function{$dd_2$}{$c,r:2^\C$} $: 2^{\C}$
+		\State let $c_1,c_2 \subseteq c \text{ with } c_1 \cup c_2 = c, c_1 \cap c_2 = \emptyset, |c_1| \approx |c_2|$
+		\State \Return $ \begin{cases}
+				c & \text{if } |c|=1, \\
+				dd_2(c_1,r) & \text{if } test(c_1 \cup r) = \xmark,\\
+				dd_2(c_2,r) & \text{if } test(c_2 \cup r) = \xmark, \\
+				dd_2(c_1, c_2 \cup r) \cup dd_2(c_2, c_1 \cup r) & \text{otherwise} 
+			\end{cases}$
+		\EndFunction
+	\end{algorithmic}
+
 \end{frame}
 
 \subsection{Inconsistency}
 \begin{frame}{Difficulty \hashtag 2: Inconsistency}
+	\begin{itemize}
+		\item $dd$ combines changes arbitrarily (in the case of interference)
+		\item That can lead to inconsistent configurations, i.e. no test outcome can be determined for these configurations 
+	\end{itemize}
+
+	\begin{alertblock}{Difficulty \hashtag 2: Inconsistency}
+		Let $c_1,c_2 \subseteq \C$. An \textbf{inconsistency} occurs when $test(c_1 \cup c_2) = \qmark$.
+	\end{alertblock}
+	\bigskip
+	\begin{exampleblock}{Idea: More granular subsets}
+		If less changes are applied at once the chances of an inconsistent result are reduced. Hence, if the algorithm cannot find any consistent confgurations reduce the number of changes per subset.
+	\end{exampleblock}
+
+\end{frame}
+
+\begin{frame}{Difficulty \hashtag 2: Inconsistency}
 	
+	Necessary changes to $dd$:
+	\begin{enumerate}
+		\item Extend $dd$ to work on a number $n$ of subsets $c_1, \dots, c_n$
+		\item \textbf{Interference} occurs when $c_i$ and its complement $\bar{c_i}$ both pass: $test(c_i) = \cmark$ and $test(\bar{c_i}) = \cmark$ ($\bar{c_i}=\C \setminus c_i$)
+		\item Add the case of \textbf{preference}: If $test(c_i)=\qmark$ and $test(\bar{c_i})=\cmark$ we deduce that $c_i$ contains a failure inducing change. 
+		\item Add the case of \textbf{Try again}: In any other case repeat the process with $2n$ subsets.
+	\end{enumerate}
 \end{frame}

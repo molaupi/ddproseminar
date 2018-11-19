@@ -22,7 +22,7 @@
 			Configuration:\\[2em]
 
 			\yd\\[1em]
-			Passes tests. \green{\checkmark}
+			Passes tests. \green{\cmark}
 			\end{center}
 		\end{column}
 		\begin{column}{0.2\textwidth}
@@ -39,7 +39,7 @@
 			Configuration:\\[2em]
 
 			\td\\[1em]
-			Tests fail. \red{X}
+			Tests fail. \red{\xmark}
 			\end{center}
 		\end{column}
 	\end{columns}
@@ -58,13 +58,15 @@
 		\item $test: 2^{\C} \to \set{\cmark,\xmark,\qmark}$ : Result of the tests applied to a configuration
 	\end{itemize}
 	
-	\medskip
+	\bigskip
+
+	A simple binary search can be conducted to find singular failure inducing changes:\\[.5em]
 
 	\begin{algorithmic}[1]
 		\Function{simpledd}{$c: 2^{\C}$}
-			\If{$\setsize{c} == 1$} \Return $c$ \EndIf
+			\If{$\setsize{c} = 1$} \Return $c$ \EndIf
 			\State Split $c$ into two halves $c_1$, $c_2$ so that $c_1 \cap c_2 = \emptyset$
-			\If{($test(c_1) == \xmark$)} \Return $simpledd(c_1)$ \Else{} \Return $simpledd(c_2)$
+			\If{($test(c_1) = \xmark$)} \Return $simpledd(c_1)$ \Else{} \Return $simpledd(c_2)$
 			\EndIf
 		\EndFunction
 	\end{algorithmic}
