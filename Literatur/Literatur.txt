@@ -1,7 +1,0 @@
-Zeller A., "Yesterday, my program worked. Today, it does not. Why?", Springer-Verlag, 1999 
-
-Zeller, A., "Why Programs Fail", 2nd Edition, d.punkt Verlag, 978-0-12-374515-6, 2009, ch. 13
-
-Zeller, A., AND Hildebrandt, R., "Simplifying and Isolating Failure-Inducing Input", IEEE Transactions on Software Engineering, Vol. 28, No. 2, February 2002, pp. 183-200
-
-Lei , Y., AND Andrews , J. H., "Minimization of randomized unit test cases". In ISSRE (2005), IEEE Computer Society, pp. 267–276
