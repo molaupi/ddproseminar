@@ -1,0 +1,56 @@
+\subsection{The DD principle as a tool}
+\begin{frame}{Using DD to find the reason a program fails}
+	\begin{itemize}
+		\item The \ddp\ algorithm as described above can be used to find out which part of a certain input is responsible for crashing a program.
+		\item From a developers perspective it would be great to know \textit{why} this specific input induces failure.
+	\end{itemize}
+
+
+\end{frame}
+
+\begin{frame}{Using DD to find the reason a program fails}
+	\begin{alertblock}{Difficulty: Causalities from the input change to the failure}
+		A minimal change in the input has major consequences for the program execution. How can the debugger know which chain of effects is responsible for the eventual failure?
+	\end{alertblock}
+
+	\pause
+
+	\begin{exampleblock}{Idea: Delta Debugging on program states}
+		Use delta debugging on program states of a known succeeding run $r_\cmark$ and a known failing run $r_\xmark$ of the program. For each analyzed pair of program states we would then know what current difference causes the failure down the line.
+
+		\bigskip
+
+		$\Rightarrow$ A \textit{Cause-Effect-Chain} can be constructed from those comparisons.
+	\end{exampleblock}	
+\end{frame}
+
+\begin{frame}{Delta Debugging on program states}
+	\begin{itemize}
+		\item A program state is essentially a set of $(variable, value)$ pairs.
+		\item A program state of $r_\cmark$ and one of $r_\xmark$ can have the following differences (the deltas): \begin{itemize}
+			\item A variable only present in one state
+			\item A different value of a variable present in both states
+		\end{itemize}
+		\item With this the runs $r_\cmark$ and $r_\xmark$ can be compared in different significant locations. 
+		\item We use delta debugging to find the current $(variable, value)$ pairs that are responsible for the failure of $r_\xmark$ further down the line.
+	\end{itemize}
+
+	%\bigskip
+
+	%$\Rightarrow$ This allows us to build a \textit{Cause-Effect-Chain} that helps understand why the program fails.
+\end{frame}
+
+\newcommand{\cecarrow}{\to}
+
+\begin{frame}{\textit{HOWCOME} on $fail.c$}
+	
+	Zellers prototypical \textit{HOWCOME} algorithm returns the following Cause-Effect-Chain for $fail.c$:
+	\small
+	\begin{enumerate}
+		\item Execution reaches \textbf{main}. \\Since the program was invoked as ``ccl -O fail.i'' variable \textbf{$argv[2]$} is now \textbf{``fail.i''}
+		\item Execution reaches \textbf{combine\_instructions}. \\ Since $argv[2]$ was ``fail.i'', variable \textbf{$*first\_loop\_store\_insn\cecarrow fld[1].rtx \cecarrow fld[1].rtx \cecarrow fld[3].rtx \cecarrow fld[1].rtx$} is now \textbf{$\langle new rtx\_def\rangle$}.
+		\item Execution reaches \textbf{if\_then\_else\_cond (95th hit)}. \\ Since $*first\_loop\_store\_insn\cecarrow fld[1].rtx \cecarrow fld[1].rtx \cecarrow fld[3].rtx \cecarrow fld[1].rtx$ was $\langle new rtx\_def\rangle$, variable \textbf{$link \cecarrow fld[0].rtx \cecarrow fld[0].rtx$} is now \textbf{$link$}.
+		\item Execution ends. \\ Since variable $link \cecarrow fld[0].rtx \cecarrow fld[0].rtx$ was $link$, the program now \textbf{terminates with a SIGSEGV signal}. The program fails.
+	\end{enumerate}
+	
+\end{frame}

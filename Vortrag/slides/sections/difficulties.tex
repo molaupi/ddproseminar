@@ -41,7 +41,7 @@
 \begin{frame}{Difficulty \hashtag 2: Inconsistency}
 	\begin{itemize}
 		\item $dd$ combines changes arbitrarily (in the case of interference)
-		\item That can lead to inconsistent configurations, i.e. no test outcome can be determined for these configurations 
+		\item This can lead to inconsistent configurations, i.e. no test outcome can be determined for these configurations 
 	\end{itemize}
 
 	\begin{alertblock}{Difficulty \hashtag 2: Inconsistency}
@@ -61,6 +61,6 @@
 		\item Extend $dd$ to work on a number $n$ of subsets $c_1, \dots, c_n$
 		\item \textbf{Interference} occurs when $c_i$ and its complement $\bar{c_i}$ both pass: $test(c_i) = \cmark$ and $test(\bar{c_i}) = \cmark$ ($\bar{c_i}=\C \setminus c_i$)
 		\item Add the case of \textbf{preference}: If $test(c_i)=\qmark$ and $test(\bar{c_i})=\cmark$ we deduce that $c_i$ contains a failure inducing change. 
-		\item Add the case of \textbf{Try again}: In any other case repeat the process with $2n$ subsets.
+		\item Add the case of \textbf{Try again}: In any other case repeat the process with $2n$ subsets to improve the chance for consistent configurations.
 	\end{enumerate}
 \end{frame}
