@@ -8,12 +8,12 @@
 
 
 \subsection{Idea}
-\begin{frame}{Version Control allows DD}
-	\begin{itemize}
-		\item Version Control has been around since the 80's
-		\item central terms: configuration, change
-	\end{itemize}
-\end{frame}
+%\begin{frame}{Version Control allows DD}
+%	\begin{itemize}
+%		\item Version Control has been around since the 80's
+%		\item central terms: configuration, change
+%	\end{itemize}
+%\end{frame}
 
 \begin{frame}{The DD idea}
 	\begin{columns}
@@ -51,7 +51,9 @@
 	\end{exampleblock}
 \end{frame}
 
-\begin{frame}{The intuitive approach}
+\subsection{First approach}
+
+\begin{frame}{A first approach}
 	\begin{itemize}
 		\item $\C = \set{\Delta_1, \dots, \Delta_n}$ : All changes between \yd and \td
 		\item $c \subseteq \C$ : A configuration (set of changes applied to \yd)
@@ -64,7 +66,7 @@
 
 	\begin{algorithmic}[1]
 		\Function{simpledd}{$c: 2^{\C}$}
-			\If{$\setsize{c} = 1$} \Return $c$ \EndIf
+			\If{$|c| = 1$} \Return $c$ \EndIf
 			\State Split $c$ into two halves $c_1$, $c_2$ so that $c_1 \cap c_2 = \emptyset$
 			\If{($test(c_1) = \xmark$)} \Return $simpledd(c_1)$ \Else{} \Return $simpledd(c_2)$
 			\EndIf
