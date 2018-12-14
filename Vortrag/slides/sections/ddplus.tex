@@ -3,7 +3,7 @@
 \newcommand{\ddp}{$dd^{+}$}
 
 \begin{frame}{The \ddp\ algorithm}
-	Zellers \textbf{extended} $dd$ algorithm \ddp\ deals with the following cases:
+	Zeller's \textbf{extended} $dd$ algorithm \ddp\ deals with the following cases:
 	\begin{enumerate}
 		\item ``found (in $c_i$)'' \only<2->{$\Rightarrow$ continue search in $c_i$}
 		\item ``interference'' \only<3->{$\Rightarrow$ search in $c_i$ while leaving $\bar{c_i}$ applied and vice versa}
@@ -26,18 +26,20 @@
 
 	\begin{columns}
 		\begin{column}{0.475\textwidth}
+			\texttt{
 			\begin{align*}
-	     &\text{double \textbf{mult}(double z[], int n)}\\
+	     &\text{double \textbf{mult}(double $z[]$, int $n$)}\\
 	     &\{\\
 	     	&\quad \text{int } i,j; \\
 	     	&\quad i = 0; \\
-	     	&\quad for(j = 0; j < n; j++)\{ \\
+	     	&\quad \text{for}(j = 0; j < n; j++)\{ \\
 	     	&\quad 	\quad i = i + j + 1; \\
 	     &	\quad 	\quad z[i] = z[i] * (z[0] + 1.0); \\
 	     &	\quad \} \\
 	     &	\quad \text{return } z[n]; \\
 	    & \}
-	\end{align*} 
+	\end{align*}
+		} 
 		\end{column}
 		\begin{column}{0.475\textwidth}
 			
