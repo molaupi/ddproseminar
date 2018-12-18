@@ -88,3 +88,7 @@
 			- a different value or
 			- a variable only present in one of the states
 		- We test a program state by continuing execution from the point of comparison
+	- If we run dd+ we can find one set of (variable, value) pairs that is responsible for the crash down the line at each point of comparison 
+
+	- Andreas Zeller made a prototypical algorithm for the GCC crash called HOWCOME
+	
