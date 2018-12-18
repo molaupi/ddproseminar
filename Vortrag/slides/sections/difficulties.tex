@@ -1,36 +1,42 @@
 \subsection{Interference}
 \begin{frame}{Difficulty \hashtag 1: Interference}
-	\begin{itemize}
-		\item $ddsimple$ works for single failure inducing-changes.
-			\begin{itemize}
-				\item In each recursion step it applies only the set of changes known to contain a failure inducing change.
-			\end{itemize}
-		\item But what if two changes exist that individually pass the tests but their combination induces failure?
-	\end{itemize}
+	%\begin{itemize}
+	%	\item $ddsimple$ works for single failure inducing-changes.
+	%		\begin{itemize}
+	%			\item In each recursion step it applies only the set of changes known to contain a failure inducing change.
+	%		\end{itemize}
+	%	\item But what if two changes exist that individually pass the tests but their combination induces failure?
+	%\end{itemize}
 
 	\begin{alertblock}{Difficulty \hashtag 1: Interference}
 		Let $c_1,c_2 \in \C$. $c_1$ and $c_2$ \textbf{interfere} when $test(c_1)=\cmark$, $test(c_2)=\cmark$ but $test(c_1\cup c_2) = \xmark$.
 	\end{alertblock}
 
-\end{frame}
+	\bigskip
+	\pause
 
-\begin{frame}{Difficulty \hashtag 1: Interference}
 	\begin{exampleblock}{Idea: Leave one set of changes applied}
 		If a configuration $c = c_1 \cup c_2$ with $test(c_1)=\cmark$ and $test(c_2)=\cmark$ is found by $simpledd$ interference between $c_1$ and $c_2$ has been detected. Run $simpledd$ on $c_1$ while leaving $c_2$ applied and vice versa.
 	\end{exampleblock}
 
-	\bigskip
+\end{frame}
+	
+\begin{frame}{The dd algorithm}
 
 	%If we add this case to the $simpledd$ algorithm it leaves us with Andreas Zellers $dd$ algorithm: $dd(c: 2^{\C}) = dd_2(c,\emptyset) \text{, where}$\\[1em]
+
+	$dd = dd_2(\C, \emptyset)$ \\[1.5em]
 
 	\begin{algorithmic}[1]
 		\Function{$dd_2$}{$c,r:2^\C$} $: 2^{\C}$
 		\State let $c_1,c_2 \subseteq c \text{ with } c_1 \cup c_2 = c, c_1 \cap c_2 = \emptyset, |c_1| \approx |c_2|$
+		\State $d_1 = dd_2(c_1, c_2 \cup r)$ %\Comment(``Search in $c_1$ while leaving $c_2$ applied'')
+		\State $d_2 = dd_2(c_2, c_1 \cup r)$ \medskip %\Comment(``Search in $c_2$ while leaving $c_1$ applied'') 
 		\State \Return $ \begin{cases}
 				c & \text{if } |c|=1, \\
-				dd_2(c_1,r) & \text{if } test(c_1 \cup r) = \xmark,\\
-				dd_2(c_2,r) & \text{if } test(c_2 \cup r) = \xmark, \\
-				dd_2(c_1, c_2 \cup r) \cup dd_2(c_2, c_1 \cup r) & \text{otherwise} 
+				dd_2(c_1,r) & \text{if } test(c_1 \cup r) = \xmark, \text{\Comment(``Found in $c_1$'')}\\
+				dd_2(c_2,r) & \text{if } test(c_2 \cup r) = \xmark, \text{\Comment(``Found in $c_2$'')}\\
+				d_1 \cup d_2 & \text{otherwise } \text{\Comment(``Interference'')}
 			\end{cases}$
 		\EndFunction
 	\end{algorithmic}
@@ -39,15 +45,17 @@
 
 \subsection{Inconsistency}
 \begin{frame}{Difficulty \hashtag 2: Inconsistency}
-	\begin{itemize}
-		\item $dd$ combines changes arbitrarily (in the case of interference)
-		\item This can lead to inconsistent configurations, i.e. no test outcome can be determined for these configurations 
-	\end{itemize}
+	%\begin{itemize}
+	%	\item $dd$ combines changes arbitrarily (in the case of interference)
+	%	\item This can lead to inconsistent configurations, i.e. no test outcome can be determined for these configurations 
+	%\end{itemize}
 
 	\begin{alertblock}{Difficulty \hashtag 2: Inconsistency}
 		Let $c_1,c_2 \subseteq \C$. An \textbf{inconsistency} occurs when $test(c_1 \cup c_2) = \qmark$.
 	\end{alertblock}
 	\bigskip
+
+	\pause
 	\begin{exampleblock}{Idea: More granular subsets}
 		If less changes are applied at once the chances of an inconsistent result are reduced. Hence, if the algorithm cannot find any consistent confgurations reduce the number of changes per subset.
 	\end{exampleblock}

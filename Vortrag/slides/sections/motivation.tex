@@ -65,6 +65,7 @@
 		\item $test: 2^{\C} \to \set{\cmark,\xmark,\qmark}$ : Result of the tests applied to a configuration
 	\end{itemize}
 	
+	\pause
 	\bigskip
 
 	A simple binary search can be conducted to find singular failure inducing changes:\\[.5em]
@@ -73,7 +74,7 @@
 		\Function{simpledd}{$c: 2^{\C}$}
 			\If{$|c| = 1$} \Return $c$ \EndIf
 			\State Split $c$ into two halves $c_1$, $c_2$ so that $c_1 \cap c_2 = \emptyset$
-			\If{($test(c_1) = \xmark$)} \Return $simpledd(c_1)$ \Else{} \Return $simpledd(c_2)$
+			\If{($test(c_1) = \xmark$)} \Return $simpledd(c_1)$ \Comment(``Found in $c_1$'') \Else{} \Return $simpledd(c_2)$ \Comment(``Found in $c_2$'')
 			\EndIf
 		\EndFunction
 	\end{algorithmic}
