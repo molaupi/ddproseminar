@@ -1,5 +1,5 @@
-\subsection{The DD principle as a tool}
-\begin{frame}{Using DD to find the reason a program fails}
+\subsection{Use case 2: Constructing Cause-Effect-Chains}
+\begin{frame}{Use case 2: Finding the reason a program fails}
 	\begin{itemize}
 		\item The \ddp\ algorithm as described above can be used to find out which part of a certain input is responsible for crashing a program.
 		\item From a developers perspective it would be great to know \textit{why} this specific input induces failure.
@@ -8,11 +8,12 @@
 
 \end{frame}
 
-\begin{frame}{Using DD to find the reason a program fails}
+\begin{frame}{Use case 2: Finding the reason a program fails}
 	\begin{alertblock}{Difficulty: Causalities from the input change to the failure}
 		A minimal change in the input has major consequences for the program execution. How can the debugger know which chain of effects is responsible for the eventual failure?
 	\end{alertblock}
 
+	\bigskip
 	\pause
 
 	\begin{exampleblock}{Idea: Delta Debugging on program states}

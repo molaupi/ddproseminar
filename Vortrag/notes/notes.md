@@ -91,4 +91,9 @@
 	- If we run dd+ we can find one set of (variable, value) pairs that is responsible for the crash down the line at each point of comparison 
 
 	- Andreas Zeller made a prototypical algorithm for the GCC crash called HOWCOME
-	
+		- If applied to fail.c and pass.c it returns a CEC like the one depicted.
+		- It may look cryptic but to a GCC developer this contains vital information
+		- Let's have a closer look
+	- The developer can see that a cycle is created in a tree pointer structure
+	- The CEC states this cycle as the exact reason for the crash
+	- The developer now has detailled knowledge over the error and knows to work on the way the RTL tree is handled
