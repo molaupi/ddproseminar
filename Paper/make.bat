@@ -1,5 +1,5 @@
 @echo off
-	set SOURCE=paper-main
+	set SOURCE=article
 
 	pdflatex .\%SOURCE%.tex
 	pdflatex .\%SOURCE%.tex
