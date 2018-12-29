@@ -1,4 +1,4 @@
-DOKUMENT = paper-main
+DOKUMENT = article
 
 make:
 	pdflatex $(DOKUMENT).tex -output-format=pdf -shell-escape

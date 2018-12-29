@@ -29,12 +29,51 @@
 \EventLogo{}
 \SeriesVolume{1}
 \ArticleNo{M6}
-%\nolinenumbers %uncomment to disable line numbering
-%\hideLIPIcs  %uncomment to remove references to LIPIcs series (logo, DOI, ...), e.g. when preparing a pre-final version to be uploaded to arXiv or another public repository
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \nolinenumbers
 \hideLIPIcs
+
+
+%%%%%%%% Own Packages %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Special symbol font
+\usepackage{pifont}
+\Pifont{pzd}
+
+% Pseudocode algorithms
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\algrenewcommand{\algorithmiccomment}[1]{\hfill\(//\) #1}
+
+
+%%%%%%%%%%%% Custom Commands %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% DD algorithms abbreviation
+\newcommand{\sdd}[0]{\textit{simpledd}}
+\newcommand{\dd}[0]{\textit{dd}}
+\newcommand{\ddp}{\textit{dd\textsuperscript{+}}}
+
+% Colored text shortcuts
+\newcommand{\green}[1]{\textcolor{green}{#1}}
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand{\gray}[1]{\textcolor{lightgray}{#1}}
+
+% Yesterday and Today
+\newcommand{\yd}[0]{\green{Yesterday} }
+\newcommand{\td}[0]{\red{Today} }
+
+% The global change set C
+\newcommand{\C}[0]{\ensuremath{\mathcal{C}}}
+
+% Possible results of the test function
+\newcommand{\cmark}{\text{\ding{51}}}
+\newcommand{\xmark}{\text{\ding{55}}}
+\newcommand{\qmark}{\textbf{?}}
+
+% Definition subject
+\newcommand{\defsub}[1]{\textbf{(#1)} }
+
+% Math mode shortcuts
+\newcommand{\set}[1]{\left \{ #1 \right \}}
 
 \begin{document}
 
@@ -45,22 +84,87 @@
 \end{abstract}
 	
 \section{What is Delta Debugging?}
-Lelokek
+
 \subsection{Yesterday and today}
+\label{ydandtd}
+
+Imagine a software development process where the latest changes to the code cause known tests to fail even though an older version of the code passed these exact tests. As the basis of the Delta Debugging principle we need to define a simple abstraction of this point in the development process: We know a state \yd that passes the tests and a state \td that fails the tests. Furthermore we know all changes that when applied to \yd yield \td. \\
+The goal of Delta Debugging is to automate extraction of the exact changes to \yd that cause the failure in \td.  
+
 \subsection{The simple idea}
+\label{ddidea}
+
+The basic idea of Delta Debugging is similar to a binary search. Recursively the number of candidates for changes that cause \td to fail is lowered. By disregarding the changes that do not cause failure eventually we end up with the smallest set of changes that when applied to \yd causes the tests to fail. 
+
+
 
 \section{Definitions and basework}
+
+The ideas described above need to be abstracted and formalized in order to approach Delta Debugging algorithms.
+
 \subsection{Configurations}
-\subsection{Problems: Interference and Inconsistency}
 
-\section{The dd+ algorithm}
-\subsection{How to solve interference}
-\subsection{How to solve inconsistency}
-\subsection{The dd+ algorithm and its properties}
+\definition \defsub{Configuration} A change set $c \subseteq \C$ is called \textbf{configuration} where $\C$ is the set of all changes between \yd and \td.
 
-\section{Using DD to minimize random unit test cases}
-\subsection{The ddmin algorithm}
-\subsection{A modern approach}
+\definition \defsub{Baseline} The empty configuration $\emptyset$ is called a \textbf{baseline}.
+
+\definition \defsub{Test} The function $test: 2^{\C} \to \set{\cmark, \xmark, \qmark}$ determines the test outcome for a configuration. It returns one of three possible results: 
+\begin{itemize}
+	\item The tests pass: $\cmark$
+	\item The tests fail: $\xmark$
+	\item No result can be determined: $\qmark$
+\end{itemize} 
+
+Let $c \subseteq \C$ be a configuration. $test(c)$ models a suite of regression tests being run on the result of applying all changes in $c$ to \yd. So by definition $test(\emptyset) = \cmark$ ("Yesterday passes") and $test(\C) = \xmark$ ("Today fails") hold.
+
+\definition \defsub{Failure-inducing configuration} A configuration $c$ is called \textbf{failure-inducing} iff 
+\[ \forall c' (c \subseteq c' \subseteq \C \rightarrow test(c') \ne \cmark) \] 
+holds.
+
+\definition \defsub{Minimal failure-inducing configuration} A failure-inducing configuration $c$ is \textbf{minimal} iff 
+\[ \forall c' \subset c: test(c') \ne \xmark \]
+holds.\\
+
+
+These terms abstract the software development situation described in \ref{ydandtd}. The goal of Delta Debugging can now be stated as finding a minimal failure-inducing configuration in $\C$.
+
+\section{Incrementally approaching a plausible DD algorithm}
+
+There is two major difficulties when approaching a Delta Debugging algorithm: interference and inconistency. A na\"ive Delta Debugging algorithm called \sdd will be refined into the \dd algorithm and finally the \ddp algorithm in this chapter in order to describe and solve both difficulties. 
+
+\subsection{A na\"ive algorithm: \sdd}
+
+The na\"ive algorithm \sdd\ recursively splits \C\ into smaller and smaller parts until one failure-inducing change is found. In each recursion step the current set of changes, $c$, is partitioned in two halves, $c_1$ and $c_2$, and both halves are tested. The half that fails the tests is regarded in the next recursion step. The algorithm knows two cases, "Found in $c_1$" and "Found in $c_2$". \\
+
+\begin{algorithmic}[1]
+		\Function{simpledd}{$c: 2^{\C}$}
+			\If{$|c| = 1$} \Return $c$ \EndIf
+			\State Partition $c$ into two halves $c_1$, $c_2$ so that $c_1 \cap c_2 = \emptyset$
+			\If{($test(c_1) = \xmark$)} \Return $simpledd(c_1)$ \Comment(``Found in $c_1$'') \Else{} \Return $simpledd(c_2)$ \Comment(``Found in $c_2$'')
+			\EndIf
+		\EndFunction
+\end{algorithmic}
+
+It becomes evident that this algorithm is not effective because it is only capable of finding single failure-inducing changes. An idea for a solution would be to remove the change that is found and re-run the algorithm. But what if mutiple changes pass the test individually but their combination induces failure? \\
+
+\definition \defsub{Interference} Two configurations $c_1$ and $c_2$ \textbf{interfere} iff $test(c_1) = \cmark$, $test(c_2) = \cmark$ but $test(c_1 \cup c_2) = \xmark$.
+
+\subsection{Dealing with interference: \dd}
+
+\subsection{Dealing with inconsistency: \ddp}
+
+\section{The \ddp algorithm}
+\subsection{The \ddp algorithm and its properties}
+
+\section{Exemplary use cases}
+\subsection{Program input analysis}
+\subsection{Program runtime analysis}
+\subsection{Minimizing random unit test cases}
+\subsubsection{The ddmin algorithm}
+
+\section{Reflection and conclusion}
+\subsection{Abstractness: strength and weakness}
+\subsection{Conclusion}
 
 
 \end{document}
