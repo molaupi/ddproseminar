@@ -130,7 +130,7 @@ These terms abstract the software development situation described in \ref{ydandt
 
 \section{Incrementally approaching a plausible DD algorithm}
 
-There is two major difficulties when approaching a Delta Debugging algorithm: interference and inconistency. A na\"ive Delta Debugging algorithm called \sdd will be refined into the \dd algorithm and finally the \ddp algorithm in this chapter in order to describe and solve both difficulties. 
+There is two major difficulties when approaching a Delta Debugging algorithm: interference and inconsistency. A na\"ive Delta Debugging algorithm called \sdd\ will be refined into the \dd\ algorithm and finally the \ddp\ algorithm in this chapter in order to describe and solve both difficulties. 
 
 \subsection{A na\"ive algorithm: \sdd}
 
@@ -140,21 +140,51 @@ The na\"ive algorithm \sdd\ recursively splits \C\ into smaller and smaller part
 		\Function{simpledd}{$c: 2^{\C}$}
 			\If{$|c| = 1$} \Return $c$ \EndIf
 			\State Partition $c$ into two halves $c_1$, $c_2$ so that $c_1 \cap c_2 = \emptyset$
-			\If{($test(c_1) = \xmark$)} \Return $simpledd(c_1)$ \Comment(``Found in $c_1$'') \Else{} \Return $simpledd(c_2)$ \Comment(``Found in $c_2$'')
+			\If{($test(c_1) = \xmark$)} \Return $simpledd(c_1)$ \Comment("Found in $c_1$") \Else{} \Return $simpledd(c_2)$ \Comment("Found in $c_2$")
 			\EndIf
 		\EndFunction
 \end{algorithmic}
 
-It becomes evident that this algorithm is not effective because it is only capable of finding single failure-inducing changes. An idea for a solution would be to remove the change that is found and re-run the algorithm. But what if mutiple changes pass the test individually but their combination induces failure? \\
+It becomes evident that this algorithm is not effective because it is only capable of finding single failure-inducing changes. An idea for a solution would be to remove the change that is found and re-run the algorithm. But what if mutiple changes pass the test individually but only their combination induces failure? \\
 
 \definition \defsub{Interference} Two configurations $c_1$ and $c_2$ \textbf{interfere} iff $test(c_1) = \cmark$, $test(c_2) = \cmark$ but $test(c_1 \cup c_2) = \xmark$.
 
 \subsection{Dealing with interference: \dd}
 
+\sdd\ is unable to handle the case of both $c_1$ and $c_2$ passing. A new algorithm \dd\ is created which behaves like \sdd\ but incorporates the case "Interference". In this case the algorithm searches for the failure-inducing change in $c_1$ while keeping $c_2$ applied and vice versa. By combining the results of both searches the interfering changes can be extracted. \\[.5em]
+
+$dd = dd_2(\C, \emptyset)$ \\
+
+\begin{algorithmic}[1]
+	\Function{$dd_2$}{$c,r:2^\C$} $: 2^{\C}$
+	\State let $c_1,c_2 \subseteq c \text{ with } c_1 \cup c_2 = c, c_1 \cap c_2 = \emptyset, |c_1| \approx |c_2|$
+	\State $d_1 = dd_2(c_1, c_2 \cup r)$ \Comment("Search in $c_1$ while leaving $c_2$ applied")
+	\State $d_2 = dd_2(c_2, c_1 \cup r)$ \Comment("Search in $c_2$ while leaving $c_1$ applied")\medskip  
+	\State \Return $ \begin{cases}
+			c & \text{if } |c|=1, \\
+			dd_2(c_1,r) & \text{if } test(c_1 \cup r) = \xmark, \text{\Comment("Found in $c_1$")}\\
+			dd_2(c_2,r) & \text{if } test(c_2 \cup r) = \xmark, \text{\Comment("Found in $c_2$")}\\
+			d_1 \cup d_2 & \text{otherwise } \text{\Comment("Interference")}
+		\end{cases}$
+	\EndFunction
+\end{algorithmic}
+
+In $dd_2$ the parameter $c$ describes the configuration in which the algorithm is currently searching and the parameter $r$ contains all changes that remain applied during the search in $c$. \\
+
+In \dd\ changes are combined arbitrarily and then tested. Depending on the changes it is possible for various reasons like syntactical errors %TODO more reasons
+that tests on the resulting configurations can not be resolved. 
+
+\definition \defsub{Inconsistent configuration} A configuration $c \subseteq \C$ is called \textbf{inconsistent} iff $test(c) = \qmark$.\\
+
+\dd\ does not deal with inconsistent configurations.
+
+
 \subsection{Dealing with inconsistency: \ddp}
 
-\section{The \ddp algorithm}
-\subsection{The \ddp algorithm and its properties}
+
+
+\section{The \ddp\ algorithm}
+\subsection{The \ddp\ algorithm and its properties}
 
 \section{Exemplary use cases}
 \subsection{Program input analysis}
