@@ -74,6 +74,7 @@
 
 % Math mode shortcuts
 \newcommand{\set}[1]{\left \{ #1 \right \}}
+\newcommand{\nN}[0]{\mathbb{N}}
 
 \begin{document}
 
@@ -134,8 +135,11 @@ There is two major difficulties when approaching a Delta Debugging algorithm: in
 
 \subsection{A na\"ive algorithm: \sdd}
 
-The na\"ive algorithm \sdd\ recursively splits \C\ into smaller and smaller parts until one failure-inducing change is found. In each recursion step the current set of changes, $c$, is partitioned in two halves, $c_1$ and $c_2$, and both halves are tested. The half that fails the tests is regarded in the next recursion step. The algorithm knows two cases, "Found in $c_1$" and "Found in $c_2$". \\
-
+The na\"ive algorithm \sdd\ recursively splits \C\ into smaller and smaller parts until one failure-inducing change is found. In each recursion step the current set of changes, $c$, is partitioned in two halves, $c_1$ and $c_2$, and both halves are tested. The half that fails the tests is regarded in the next recursion step. The algorithm knows two cases, "Found in $c_1$" and "Found in $c_2$".
+\\
+\begin{figure}[h!]
+\fbox{\begin{minipage}{\textwidth}
+	
 \begin{algorithmic}[1]
 		\Function{simpledd}{$c: 2^{\C}$}
 			\If{$|c| = 1$} \Return $c$ \EndIf
@@ -144,16 +148,22 @@ The na\"ive algorithm \sdd\ recursively splits \C\ into smaller and smaller part
 			\EndIf
 		\EndFunction
 \end{algorithmic}
+\end{minipage}}
+\caption{The na\"ive DD algorithm \sdd}
+\end{figure}
+\\
+It becomes evident that this algorithm is not effective because it is only capable of finding single changes that cause failure on their own. But what if mutiple changes pass the test individually but only their combination induces failure? \\
 
-It becomes evident that this algorithm is not effective because it is only capable of finding single failure-inducing changes. An idea for a solution would be to remove the change that is found and re-run the algorithm. But what if mutiple changes pass the test individually but only their combination induces failure? \\
-
-\definition \defsub{Interference} Two configurations $c_1$ and $c_2$ \textbf{interfere} iff $test(c_1) = \cmark$, $test(c_2) = \cmark$ but $test(c_1 \cup c_2) = \xmark$.
+\definition \defsub{Interference} Two configurations $c_1$ and $c_2$ \textbf{interfere} iff $test(c_1) = \cmark$, $test(c_2) = \cmark$ but $test(c_1 \cup c_2) = \xmark$. \\
 
 \subsection{Dealing with interference: \dd}
 
-\sdd\ is unable to handle the case of both $c_1$ and $c_2$ passing. A new algorithm \dd\ is created which behaves like \sdd\ but incorporates the case "Interference". In this case the algorithm searches for the failure-inducing change in $c_1$ while keeping $c_2$ applied and vice versa. By combining the results of both searches the interfering changes can be extracted. \\[.5em]
-
-$dd = dd_2(\C, \emptyset)$ \\
+\sdd\ is unable to handle the case of both $c_1$ and $c_2$ passing. A new algorithm \dd\ is created which behaves like \sdd\ but incorporates the case "Interference". In this case the algorithm searches for the failure-inducing change in $c_1$ while keeping $c_2$ applied and vice versa. By combining the results of both searches the interfering changes can be extracted.
+\\
+\begin{figure}[h!]
+\fbox{\begin{minipage}{\textwidth}
+	
+$dd = dd_2(\C, \emptyset)$ where \\
 
 \begin{algorithmic}[1]
 	\Function{$dd_2$}{$c,r:2^\C$} $: 2^{\C}$
@@ -168,19 +178,61 @@ $dd = dd_2(\C, \emptyset)$ \\
 		\end{cases}$
 	\EndFunction
 \end{algorithmic}
+\end{minipage}}
+\caption{The \dd\ algorithm capable of dealing with interference.}
+\end{figure}
+\\
 
 In $dd_2$ the parameter $c$ describes the configuration in which the algorithm is currently searching and the parameter $r$ contains all changes that remain applied during the search in $c$. \\
 
-In \dd\ changes are combined arbitrarily and then tested. Depending on the changes it is possible for various reasons like syntactical errors %TODO more reasons
-that tests on the resulting configurations can not be resolved. 
+In \dd\ changes are combined arbitrarily and then tested. It is possible that no test result on the resulting configurations can be determined. 
 
-\definition \defsub{Inconsistent configuration} A configuration $c \subseteq \C$ is called \textbf{inconsistent} iff $test(c) = \qmark$.\\
+\definition \defsub{Inconsistent configuration} A configuration $c \subseteq \C$ is called \textbf{inconsistent} iff $test(c) = \qmark$. \\
 
-\dd\ does not deal with inconsistent configurations.
+In the real world of code and regression tests this scenario is most likely caused by a combination of changes resulting in syntactical or semantical errors. An inconsistent configuration may also occur when a change is dependent on another change not included in the configuration or when the program execution fails during testing. 
+
+\dd\ does not deal with inconsistent configurations. It behaves wrong if the configurations that are tested in the "Found" cases are inconsistent.
 
 
 \subsection{Dealing with inconsistency: \ddp}
 
+The key to solving inconsistency is partitioning $c$ into more than two subsets making the sets of changes smaller. We know that the baseline $\emptyset$ and applying all changes $\C$ are consistent. By applying less changes to \yd or removing less changes from \td (s. case "Preference" below). the chances of the result being consistent is increased. If the algorithm runs into only inconsistent configurations the number of subsets is increased and the chances of at least one configuration being consistent after is increased. This solution requires the final Delta Debugging algorithm to handle any number $n$ of subsets whereas \dd\ only handles two change sets, $c_1$ and $c_2$ at a time.
+
+\definition \defsub{Complement of configuration} Let $c \subseteq \C$ be a configuration. The configuration $\bar{c} = \C \setminus c$ is called the \textbf{complement} of $c$.\\
+
+The final Delta Debugging algorithm \ddp\ on the subsets $c_1, \dots, c_n$ knows four cases:\\
+\begin{description}
+	\item["Found in $c_i$"] If testing any $c_i$ fails it contains a failure-inducing subset. Continue search in $c_i$.
+	\item["Interference"] If any $c_i$ and $\bar{c_i}$ both pass they form an interference. Continue as in \dd.
+	\item["Preference"] If any $c_i$ is unresolved but $\bar{c_i}$ passes then $c_i$ contains a failure-inducing subset. $c_i$ is then preferred. Continue search in $c_i$ while leaving $\bar{c_i}$ applied to promote consistency.
+	\item["Try Again"] If none of the above cases apply then continue the search with $2n$ subsets. The chance of consistent configurations is increased.
+\end{description}
+
+
+\begin{figure}[h!]
+\fbox{\begin{minipage}{\textwidth}
+	
+$dd^+(c) = dd_3(c, \emptyset,2)$ where \\
+
+\begin{algorithmic}[1]
+	\Function{$dd_3$}{$c,r:2^\C, n: \nN$} $: 2^{\C}$
+	\State let $c_1,\dots,c_n \subseteq c \text{ with } \bigcup c_i = c, c_i \text{ pairwise disjoint}, \forall i: |c_i| \approx |c|/n$
+	\State let $\bar{c_i} = c \setminus (c_i \cup r), t_i = test(c_i \cup r), \bar{t_i} = test(\bar{c_i} \cup r)$
+	\State let $c' = c \cap \bigcap \set{\bar{c_i} \mid \bar{t_i} = \xmark}, r' = r \cup \bigcup \set{c_i \mid t_i = \cmark}, n' = min (\mid c' \mid, 2n)$
+	\State let $d_i = dd_3(c_i, \bar{c_i} \cup r, 2), \bar{d_i} = dd_3(\bar{c_i},c_i \cup r, 2)$ 
+	\State \Return $ \begin{cases}
+			c & \text{if } |c|=1, \text{\Comment("Found")}\\
+			dd_3(c_i, r, 2) & \text{if } t_i = \xmark \text{ for some i \Comment("Found in $c_i$")}\\
+			d_i \cup \bar{d_i} & \text{if } t_i = \cmark \wedge \bar{t_i} = \cmark \text{ for some i \Comment("Interference")}\\
+			d_i & \text{if } t_i = \qmark \wedge \bar{t_i} = \cmark \text{ for some i \Comment("Preference")}\\
+			dd_3(c',r',n') & \text{if } n < \mid c \mid \text{\Comment("Try Again")}\\
+			c' & \text{otherwise \Comment("nothing left")}
+		\end{cases}$
+	\EndFunction
+\end{algorithmic}
+\end{minipage}}
+\caption{The \ddp\ algorithm capable of dealing with unresolved test cases.}
+\end{figure}
 
 
 \section{The \ddp\ algorithm}
