@@ -198,7 +198,7 @@ In the real world of code and regression tests this scenario is most likely caus
 
 The key to solving inconsistency is partitioning $c$ into more than two subsets making the sets of changes smaller. We know that the baseline $\emptyset$ and applying all changes $\C$ are consistent. By applying less changes to \yd or removing less changes from \td (s. case "Preference" below). the chances of the result being consistent is increased. If the algorithm runs into only inconsistent configurations the number of subsets is increased and the chances of at least one configuration being consistent after is increased. This solution requires the final Delta Debugging algorithm to handle any number $n$ of subsets whereas \dd\ only handles two change sets, $c_1$ and $c_2$ at a time.
 
-\definition \defsub{Complement of configuration} Let $c \subseteq \C$ be a configuration. The configuration $\bar{c} = \C \setminus c$ is called the \textbf{complement} of $c$.\\
+\definition \defsub{Complement of configuration} Let $c \subseteq \C$ be a configuration. The configuration $\bar{c}$ is called the \textbf{complement} of $c$. It contains all changes that are contained in the current search but not in $c$.\\
 
 The final Delta Debugging algorithm \ddp\ on the subsets $c_1, \dots, c_n$ knows four cases:\\
 \begin{description}
@@ -226,7 +226,7 @@ $dd^+(c) = dd_3(c, \emptyset,2)$ where \\
 			d_i \cup \bar{d_i} & \text{if } t_i = \cmark \wedge \bar{t_i} = \cmark \text{ for some i \Comment("Interference")}\\
 			d_i & \text{if } t_i = \qmark \wedge \bar{t_i} = \cmark \text{ for some i \Comment("Preference")}\\
 			dd_3(c',r',n') & \text{if } n < \mid c \mid \text{\Comment("Try Again")}\\
-			c' & \text{otherwise \Comment("nothing left")}
+			c' & \text{otherwise \Comment("Nothing Left")}
 		\end{cases}$
 	\EndFunction
 \end{algorithmic}
