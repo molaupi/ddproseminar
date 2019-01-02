@@ -44,6 +44,8 @@
 \usepackage[noend]{algpseudocode}
 \algrenewcommand{\algorithmiccomment}[1]{\hfill\(//\) #1}
 
+% Colors
+\usepackage{xcolor}
 
 %%%%%%%%%%%% Custom Commands %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -234,12 +236,53 @@ $dd^+(c) = dd_3(c, \emptyset,2)$ where \\
 \caption{The \ddp\ algorithm capable of dealing with unresolved test cases.}
 \end{figure}
 
-
-\section{The \ddp\ algorithm}
-\subsection{The \ddp\ algorithm and its properties}
-
 \section{Exemplary use cases}
+
+In this chapter three exemplary use cases for Delta Debugging will be shown.
+
 \subsection{Program input analysis}
+
+If a certain input is known to cause a program to fail execution Delta Debugging can be used to analyze which part of the program input is responsible for the failure. The \ddp\ algorithm as defined above can be used without any modifications. It is necessary, though, to define certain abstract concepts in the context of input analysis.\\
+\begin{itemize}
+  	\item We assume a known minimal input for the program at hand that does not cause failure. In many cases this minimal input would be some sort of "empty" input, be it no data, zero values, etc. This minimal input is regarded as the \yd state.
+  	\item The known failing input is regarded as the \td state.
+  	\item A change is defined as the smallest possible difference between any two possible inputs, usually a letter, number or other token of data. $\C$ can then be any set of changes that convert the minimal input \yd to the failing input \td.
+  	\item The $test$ function returns $\xmark$ if exactly the known error occurs on program execution. It returns $\cmark$ if no error occurs and $\qmark$ in all other cases. 
+\end{itemize}
+
+Running \ddp\ with these concrete definitions finds the parts of the input that are responsible for the failure. If the input itself is faulty the error will be revealed directly. If the error lies within the program the algorithm delivers a starting point for manually debugging the error.
+
+Consider as an example the C program \texttt{fail.c} which caused the GNU C Compiler (GCC) in version XY %TODO VERSION!
+to crash. The program looks like correct C code that should be able to be compiled. We'd like to use Delta Debugging to find out which part of \texttt{fail.c} is responsible for the crash. For this an empty C program is regarded as the \yd state and \texttt{fail.c} as the \td state. A change is defined as a C language token. $\C$ is comprised of all tokens in \texttt{fail.c}. As depicted in \ref{fig:ddponfail} \ddp\ only takes 21 tests to find out that the C tokens "$+ 1.0$" are a minimal failure-inducing set of changes.
+\\
+\begin{figure}[h!]
+	\fbox{
+		\begin{minipage}{\textwidth}
+			\begin{centering}
+			\begin{tabular}{clc}
+				\# & GCC input & test \\
+				\hline
+				1 & double mult($\dots$) $\{ int \; i, j; \; i = 0; \; for (\dots) \{ \dots\} \dots\}$ & $\xmark$ \\
+				2 &\gray{ double mult($\dots$) $\{ int \; i, j; \; i = 0; \; for (\dots) \{ \dots\} \dots\}$} & $\cmark$ \\
+				3 & double mult($\dots$) $\{\gray{ int \; i, j; \; i = 0; \; for (\dots) \{ \dots\} \dots}\}$ & $\cmark$ \\
+				4 & double mult($\dots$) $\{ int \; i, j; \; i = 0; \; \gray{for (\dots) \{ \dots\} \dots}\}$ & $\cmark$ \\
+				5 & double mult($\dots$) $\{ int \; i, j; \; i = 0; \; for (\dots) \{ \dots\}\gray{ \dots}\}$ & $\xmark$ \\
+				6 & double mult($\dots$) $\{ int \; i, j; \; i = 0; \; for (\gray{\dots}) \{ \dots\} \gray{\dots}\}$ & $\cmark$ \\
+
+				\vdots & \multicolumn{1}{c}{\vdots} & \vdots \\
+				18 & \multicolumn{1}{c}{\dots \quad $z[i] = z[i] * (z[0] + 1.0);$ \quad \dots } & \xmark \\
+				19 & \multicolumn{1}{c}{\dots \quad $z[i] = z[i] * (z[0] \gray{+ 1.0});$ \quad \dots } & \cmark \\
+				20 & \multicolumn{1}{c}{\dots \quad $z[i] = z[i] * (z[0] \gray{+} 1.0);$ \quad \dots } & \qmark \\
+				21 & \multicolumn{1}{c}{\dots \quad $z[i] = z[i] * (z[0] + \gray{1.0});$ \quad \dots } & \qmark \\
+			\end{tabular}
+			\end{centering}
+		\end{minipage}
+	}
+	\label{fig:ddponfail}
+	\caption{How \ddp\ finds the part of \texttt{fail.c} that is responsible for GCC crashing.}
+\end{figure}
+
+
 \subsection{Program runtime analysis}
 \subsection{Minimizing random unit test cases}
 \subsubsection{The ddmin algorithm}
