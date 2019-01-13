@@ -256,6 +256,8 @@ $dd^+(c) = dd_3(c, \emptyset,2)$ where \\
 \label{fig:ddp}
 \end{figure}
 
+\ddp\ returns a minimal failure-inducing subset of changes as long as the subset is safe, that is they can be applied to the baseline or removed from \td\ without causing an inconsistency. \ddp\ has linear time complexity \cite{Zeller:1999:YMP:318774.318946}.
+
 \subsection{Isolating a minimal difference: \dddiff}
 
 All the above Delta Debugging algorithms have focused on simplification of a failing configuration. The idea of simplification is to eliminate as many non-failure-inducing changes from $\C$ as possible to find out what the actual changes between \yd\ and \td\ were that cause the failure today.
@@ -312,13 +314,13 @@ The idea of the isolation algorithm \dddiff\ is to increase the size of \cpass\ 
   	\item[``increase granularity''] If none of the above cases apply, i.e. the tests all remain unresolved, then the granularity of the partition of $\Delta$ is increased as in \ddp. 
   	\item[``done''] If $n \ge |\Delta|$ the granularity can not be increased further. In that case every $\Delta_i$ only contains one change. If \cpass\ cannot be increased and \cfail\ not be reduced at that point, the difference between them is 1-minimal and they are returned.\\
 \end{description}
-The full \dddiff\ algorithm is shown in Figure \ref{fig:dddiff}.\\
+The full \dddiff\ algorithm is shown in Figure \ref{fig:dddiff}. It is desribed by Zeller as the successor to \ddp\ and is recommended to generally replace \ddp\ \cite{Zeller:2002:SIF:506201.506206}. \\
 
 Isolation has two technical advantages over simplification:
 \begin{enumerate}
-	\item It takes less tests to find a 1-minimal failure-inducing difference than to find a minimal failure-inducing subset of changes. %TODO quote paper
+	\item It takes less tests to find a 1-minimal failure-inducing difference than to find a minimal failure-inducing subset of changes \cite{Zeller:2002:SIF:506201.506206}.
 	This is because isolation can improve the current configurations if either a test fails or a test passes whereas simplification needs a test to fail to reduce the size of the current subset of changes. Simply put, isolation approaches the solution from both sides simultaneously while simplification only works in one way.
-	\item The simplification algorithm \ddp\ relies on monotone configurations, i.e. $test(c)=\cmark \Rightarrow (\forall c' \subseteq c : test(c') = \cmark)$ holds for all $c \in \C$. The isolation algorithm \dddiff\ does not need to assume all configurations are monotone. With some adaptations it can still make use of that property if it is given, though. %TODO quote paper
+	\item The simplification algorithm \ddp\ relies on monotone configurations, i.e. $test(c)=\cmark \Rightarrow (\forall c' \subseteq c : test(c') = \cmark)$ holds for all $c \in \C$. The isolation algorithm \dddiff\ does not need to assume all configurations are monotone. With some adaptations it can still make use of that property if it is given, though \cite{Zeller:2002:SIF:506201.506206}.
 \end{enumerate}
 
 \section{Exemplary use cases}
@@ -417,7 +419,7 @@ The definition of the test function makes evident why a testing framework is nee
 
 Given the above concrete definitions the \href{fig:ddp}{\ddp} algorithm can be used repeatedly to compare \rpass\ and \rfail. The result of each execution of \ddp\ will be a set of \textit{(variable, value)} pairs in \sfail\ that are responsible for the failure down the line. A Cause-Effect-Chain from the input to the failure is then created by chaining together the results of each state comparison. The CEC can give a detailled look into the root cause of the error.\\
 
-Consider as an example the above example program \reffail\ that crashes GCC. Applying GCC on $fail.c$ is regarded as \rfail\ and applying GCC to an empty C program as \rpass\ (compiling no code obviously terminates correctly). Andreas Zeller's experimental \textit{HOWCOME} algorithm\footnote{The \textit{HOWCOME} algorithm uses Delta Debugging as desribed above and incorporates technical issues like the extraction of program states and applying the test and analysis framework.} %TODO quote
+Consider as an example the above example program \reffail\ that crashes GCC. Applying GCC on $fail.c$ is regarded as \rfail\ and applying GCC to an empty C program as \rpass\ (compiling no code obviously terminates correctly). Andreas Zeller's experimental \textit{HOWCOME} algorithm\footnote{The \textit{HOWCOME} algorithm uses Delta Debugging as desribed above and incorporates technical issues like the extraction of program states and applying the test and analysis framework \cite{Zeller:2002:ICC:587051.587053}.}
 compares the runs at the function \textit{main} shortly after the start of the program, at the function $combine\_instructions$ in the middle of the program run and at the last hit of the function $if\_then\_else\_cond$ shortly before the failure. \textit{HOWCOME} yields a \href{fig:failcec}{Cause-Effect-Chain} that includes the comparisons at those locations.
 
 \begin{figure}[h!]
@@ -431,7 +433,7 @@ compares the runs at the function \textit{main} shortly after the start of the p
 			\end{enumerate}
 		\end{minipage}
 	}
-	\caption{The Cause-Effect-Chain that is deduced by \textit{HOWCOME} for \reffail.}
+	\caption{The Cause-Effect-Chain that is deduced by \textit{HOWCOME} for \reffail \cite{Zeller:2002:ICC:587051.587053}.}
 	\label{fig:failcec}
 \end{figure}
 
@@ -441,11 +443,11 @@ The CEC contains the cause for the failure but the fault in the program has to b
 
 \subsection{Minimizing random unit test cases}
 
-An important part of software testing today is randomized tests. Given a unit under test (UUT) a randomized test case generator will create random sequences of instructions to the UUT with randomized input data. The test driver will use the generated sequences to test the functionality of the UUT even under implausible circumstances. Non-randomized test drivers with test cases written by the programmer will not be able to cover all these cases (see Fuzzing).%TODO quote paper
+An important part of software testing today is randomized tests. Given a unit under test (UUT) a randomized test case generator will create random sequences of instructions to the UUT with randomized input data. The test driver will use the generated sequences to test the functionality of the UUT even under implausible circumstances. Non-randomized test drivers with test cases written by the programmer will not be able to cover all these cases.
 
 The problem with randomized unit testing is that the randomly generated failing test cases are often not useful for the programmer. When debugging the code, the failing test cases hold little value as they tend to contain lots of unnecessary instructions, which hides the reason for the failure. 
 
-After generating random test cases it would be useful to minimize the failing test cases so they only contain the instructions that are relevant for inducing the failure. This is where Delta Debugging comes to play: By viewing a empty test case as the \yd\ state and the randomly generated failing test case as the \td\ state, we can apply a Delta Debugging algorithm to minimize the test case. We define the abstract DD concepts in this context more concretely:
+After generating random test cases it would be useful to minimize the failing test cases so they only contain the instructions that are relevant for inducing the failure. This is where Delta Debugging comes to play (\cite{Lei:2005:MRU:1104997.1105255}): By viewing a empty test case as the \yd\ state and the randomly generated failing test case as the \td\ state, we can apply a Delta Debugging algorithm to minimize the test case. We define the abstract DD concepts in this context more concretely:
 
 \begin{itemize}
 	\item Every instruction in the randomly generated failing test case is regarded as one change.
@@ -453,14 +455,15 @@ After generating random test cases it would be useful to minimize the failing te
 	\item The \textit{test} function models the execution of the instructions in the test driver. The instructions are always executed in the same order as they were in the original randomly generated failing test case. 
 \end{itemize}
 
-Both \ddp\ and \dddiff\ can be used in this scenario. \ddp\ will return a minimal sequence of instruction that induces the same error as the original test case whereas \dddiff\ returns two test cases, one passing and one failing, with a minimal difference. \dddiff\ will likely be more efficient %TODO quote
+Both \ddp\ and \dddiff\ can be used in this scenario. \ddp\ will return a minimal sequence of instruction that induces the same error as the original test case whereas \dddiff\ returns two test cases, one passing and one failing, with a minimal difference. \dddiff\ will likely be more efficient (\cite{Zeller:2002:SIF:506201.506206})
  but it remains a matter of context which result is more useful for the debugging of the program code.\\
 
-To improve the runtime of the test case minimization static slicing can be initially applied to the test cases. In static slicing Read-Write-Data-Dependencies between the instructions are analyzed and only the instructions that could influence the last instruction remain in the test. This method is a static analysis of the test cases, meaning it does not actually need to execute the tests in order to find instructions that are irrelevant for the failure. This gives static slicing a runtime advantage compared to minimization by Delta Debugging. At the same time static slicing is not as effective as DD minimization. A combination of both, that is first applying static slicing and then DD minimization, will retain the advantages of both methods, though: It has a lower runtime but is just as efficient as DD minimization. %TODO quote efficient unit test case minimization
+To improve the runtime of the test case minimization static slicing can be initially applied to the test cases. In static slicing Read-Write-Data-Dependencies between the instructions are analyzed and only the instructions that could influence the last instruction remain in the test. This method is a static analysis of the test cases, meaning it does not actually need to execute the tests in order to find instructions that are irrelevant for the failure. This gives static slicing a runtime advantage compared to minimization by Delta Debugging. At the same time static slicing is not as effective as DD minimization. A combination of both, that is first applying static slicing and then DD minimization, will retain the advantages of both methods, though: It has a lower runtime but is just as efficient as DD minimization \cite{Leitner:2007:EUT:1321631.1321698}.
 
 \section{Reflection and conclusion}
 \subsection{Abstractness: strength and weakness}
 \subsection{Conclusion}
 
+\bibliography{article}
 
 \end{document}
