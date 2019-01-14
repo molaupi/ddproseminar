@@ -85,7 +85,7 @@
 \newcommand{\nN}[0]{\mathbb{N}}
 
 % fail.c reference shortcut
-\newcommand{\reffail}[0]{\href{fig:fail.c}{\ensuremath{fail.c^{Fig. \ref{fig:fail.c}}}}}
+\newcommand{\reffail}[0]{\hyperref[fig:fail.c]{\ensuremath{fail.c}}}
 
 % r_pass and r_fail shortcuts
 \newcommand{\rpass}[0]{\ensuremath{r_{\cmark}}}
@@ -101,10 +101,15 @@
 \maketitle
 
 \begin{abstract}
-	This paper deals with the Delta Debugging method.
+	Debugging is tedious work for any programmer. This thought sparked the concept of Delta Debugging. In the late 90's and early 2000's Andreas Zeller abstracted a simplistic scenario (``\yd\ my program worked, \td\ it does not. Why?'') into algorithmically tackling debugging. The goal is simple: If every change between \yd\ and \td\ is seen as a Delta, which Deltas are responsible for the failure of \td?
+
+	This paper summarizes Zeller's early work on Delta Debugging \cite{Zeller:1999:YMP:318774.318946} and further gives an overview about several use cases for Delta Debugging that have been found in the early 2000's. 
 \end{abstract}
 	
 \section{What is Delta Debugging?}
+\label{sec:what_is_dd}
+
+This section outlines the scenario that acts as the base for all following definitions and gives an idea of how Delta Debugging is useful.
 
 \subsection{Yesterday and today}
 \label{ydandtd}
@@ -119,7 +124,8 @@ The basic idea of Delta Debugging is similar to a binary search. Recursively the
 
 
 
-\section{Definitions and basework}
+\section{Formalizing concepts}
+\label{sec:formalizing_concepts}
 
 The ideas described above need to be abstracted and formalized in order to approach Delta Debugging algorithms.
 
@@ -150,8 +156,9 @@ holds.\\
 These terms abstract the software development situation described in \ref{ydandtd}. The goal of Delta Debugging can now be stated as finding a minimal failure-inducing configuration in $\C$.
 
 \section{Incrementally approaching a plausible DD algorithm}
+\label{sec:ddalgorithms}
 
-There is two major difficulties when approaching a Delta Debugging algorithm: interference and inconsistency. A na\"ive Delta Debugging algorithm called \sdd\ will be refined into the \dd\ algorithm and the \ddp\ algorithm in this chapter in order to describe and solve both difficulties. Finally, isolation of a minimal-failure inducing difference, an alternative approach to DD, is protrayed through the \dddiff\ algorithm.
+There is two major difficulties when approaching a Delta Debugging algorithm: interference and inconsistency. A na\"ive Delta Debugging algorithm called \sdd\ will be refined into the \dd\ algorithm and the \ddp\ algorithm in this chapter in order to describe and solve both difficulties. Finally, isolation of a minimal-failure inducing difference, an alternative approach to DD, is portrayed through the \dddiff\ algorithm.
 
 \subsection{A na\"ive algorithm: \sdd}
 
@@ -173,7 +180,7 @@ The na\"ive algorithm \sdd\ recursively splits \C\ into smaller and smaller part
 \label{fig:sdd}
 \end{figure}
 \\
-It becomes evident that this algorithm is not effective because it is only capable of finding single changes that cause failure on their own. But what if mutiple changes pass the test individually but only their combination induces failure? \\
+It becomes evident that this algorithm is not effective because it is only capable of finding single changes that cause failure on their own. But what if multiple changes pass the test individually but only their combination induces failure? \\
 
 \definition \defsub{Interference} Two configurations $c_1$ and $c_2$ \textbf{interfere} iff $test(c_1) = \cmark$, $test(c_2) = \cmark$ but $test(c_1 \cup c_2) = \xmark$. \\
 
@@ -256,7 +263,9 @@ $dd^+(c) = dd_3(c, \emptyset,2)$ where \\
 \label{fig:ddp}
 \end{figure}
 
-\ddp\ returns a minimal failure-inducing subset of changes as long as the subset is safe, that is they can be applied to the baseline or removed from \td\ without causing an inconsistency. \ddp\ has linear time complexity \cite{Zeller:1999:YMP:318774.318946}.
+\lemma \ddp\ returns a minimal failure-inducing subset of changes as long as the subset is safe, that is they can be applied to the baseline or removed from \td\ without causing an inconsistency. \ddp\ has linear time complexity.
+
+\proof See \cite{Zeller:1999:YMP:318774.318946}.
 
 \subsection{Isolating a minimal difference: \dddiff}
 
@@ -304,7 +313,7 @@ We aim at finding two configurations with a \textit{1-minimal failure-inducing d
 	\label{fig:dddiff}
 \end{figure}
 
-The idea of the isolation algorithm \dddiff\ is to increase the size of \cpass\ or decrease the size of \cfail\ until their difference is 1-minimal. The algorithm is initialized with $\cpass = \emptyset$ and $\cfail = \C$. The difference $\Delta = \cfail \setminus \cpass$ is paritioned into $n$ disjoint subsets $\Delta_1, ..., \Delta_n$ much as in \ddp. Then the follwing cases are evaluated:
+The idea of the isolation algorithm \dddiff\ is to increase the size of \cpass\ or decrease the size of \cfail\ until their difference is 1-minimal. The algorithm is initialized with $\cpass = \emptyset$ and $\cfail = \C$. The difference $\Delta = \cfail \setminus \cpass$ is partitioned into $n$ disjoint subsets $\Delta_1, ..., \Delta_n$ much as in \ddp. Then the following cases are evaluated:
 
 \begin{description}
   	\item[``reduce to subset''] If adding any $\Delta_i$ to the current \cpass\ yields a failing configuration, this configuration can be used as a new \cfail\ as it is smaller than the current \cfail. Recurse with a partition granularity of 2.
@@ -314,7 +323,7 @@ The idea of the isolation algorithm \dddiff\ is to increase the size of \cpass\ 
   	\item[``increase granularity''] If none of the above cases apply, i.e. the tests all remain unresolved, then the granularity of the partition of $\Delta$ is increased as in \ddp. 
   	\item[``done''] If $n \ge |\Delta|$ the granularity can not be increased further. In that case every $\Delta_i$ only contains one change. If \cpass\ cannot be increased and \cfail\ not be reduced at that point, the difference between them is 1-minimal and they are returned.\\
 \end{description}
-The full \dddiff\ algorithm is shown in Figure \ref{fig:dddiff}. It is desribed by Zeller as the successor to \ddp\ and is recommended to generally replace \ddp\ \cite{Zeller:2002:SIF:506201.506206}. \\
+The full \dddiff\ algorithm is shown in Figure \ref{fig:dddiff}. It is described by Zeller as the successor to \hyperref[fig:ddp]{\ddp} and is recommended to generally replace \ddp\ \cite{Zeller:2002:SIF:506201.506206}. \\
 
 Isolation has two technical advantages over simplification:
 \begin{enumerate}
@@ -324,6 +333,7 @@ Isolation has two technical advantages over simplification:
 \end{enumerate}
 
 \section{Exemplary use cases}
+\label{sec:use_cases}
 
 In this chapter three exemplary use cases for Delta Debugging will be shown.
 
@@ -394,8 +404,8 @@ Consider as an example the C program \reffail\ which caused the GNU C Compiler (
 
 \subsection{Program runtime analysis}
 
-It can be of great help for the software developer to be able to automatically determine the specific parts of the program input that cause the failure. The information gathered from the above method can be used by the developer to manually trace the responsible input data to the crash. Considering how a miniscule input change can cause entirely different execution paths this task is tedious if not impossible.
-Delta Debugging can help trace the error from the root to the failure during program execution as well, though. Given a test framework that is able to access \href{def:program_state}{program states} during execution, DD is used on the program states of two \href{def:program_run}{program runs} \rpass\ and \rfail\ at significant locations to deduce a \textit{Cause-Effect-Chain (CEC)}.
+It can be of great help for the software developer to be able to automatically determine the specific parts of the program input that cause the failure. The information gathered from the above method can be used by the developer to manually trace the responsible input data to the crash. Considering how a minuscule input change can cause entirely different execution paths this task is tedious if not impossible.
+Delta Debugging can help trace the error from the root to the failure during program execution as well, though. Given a test framework that is able to access \hyperref[def:program_state]{program states} during execution, DD is used on the program states of two \hyperref[def:program_run]{program runs} \rpass\ and \rfail\ at significant locations to deduce a \textit{Cause-Effect-Chain (CEC)}.
 
 The entire program execution is determined by a set of circumstances. We focus on changeable circumstances, more specifically the circumstances that influence the test outcome. A program run, i.e. one specific sequence of program states, is determined only by the set of circumstances that induce the specific run.
 
@@ -403,7 +413,7 @@ The entire program execution is determined by a set of circumstances. We focus o
 
 For our intents and purposes it is sufficient to only consider the program input as the changeable circumstances as we assume the error lies within the program code and occurs independently of operating systems, hardware and other environmental factors.  
 
-\definition \label{def:program_state} \defsub{Program states} A program state $p$ is a set of \textit{(variable, value)} pairs that unambiguously determine further program execution. The program state always corresponds to a specific point in a \href{def:program_run}{program run}.\\
+\definition \label{def:program_state} \defsub{Program states} A program state $p$ is a set of \textit{(variable, value)} pairs that unambiguously determine further program execution. The program state always corresponds to a specific point in a \hyperref[def:program_run]{program run}.\\
 
 In order to use Delta Debugging on program states we need to once again define concrete realizations of the abstract DD concepts:
 
@@ -415,12 +425,12 @@ In order to use Delta Debugging on program states we need to once again define c
 	\item The \textit{test} function models further program execution from a given program state. It returns \xmark\ if the program crashes with the exact known error and \cmark\ if the program terminates correctly. In all other cases \qmark\ is returned (e.g. a crash with a different error). 
 \end{itemize}
 
-The definition of the test function makes evident why a testing framework is needed. We need to be able to extract the program state \spass\ of \rpass\ and \sfail\ of \rfail\ at a certain point in order to compare them. More importantly, though, the program code needs to be executed from that point repeatedly with different program states. The states might even be artificial, i.e. they are created by applying arbitrary subsets of $\C$ to \spass\ and would never occur in any run without outside interference. In that case unexpected behaviour will occur and memory leaks are likely. The framework needs to make sure no harm is done to the machine or other software. Frameworks for testing and analyzing program execution with these capabilities luckily do exist already, though.
+The definition of the test function makes evident why a testing framework is needed. We need to be able to extract the program state \spass\ of \rpass\ and \sfail\ of \rfail\ at a certain point in order to compare them. More importantly, though, the program code needs to be executed from that point repeatedly with different program states. The states might even be artificial, i.e. they are created by applying arbitrary subsets of $\C$ to \spass\ and would never occur in any run without outside interference. In that case unexpected behavior will occur and memory leaks are likely. The framework needs to make sure no harm is done to the machine or other software. Frameworks for testing and analyzing program execution with these capabilities luckily do exist already, though.
 
-Given the above concrete definitions the \href{fig:ddp}{\ddp} algorithm can be used repeatedly to compare \rpass\ and \rfail. The result of each execution of \ddp\ will be a set of \textit{(variable, value)} pairs in \sfail\ that are responsible for the failure down the line. A Cause-Effect-Chain from the input to the failure is then created by chaining together the results of each state comparison. The CEC can give a detailled look into the root cause of the error.\\
+Given the above concrete definitions the \hyperref[fig:ddp]{\ddp} algorithm can be used repeatedly to compare \rpass\ and \rfail. The result of each execution of \ddp\ will be a set of \textit{(variable, value)} pairs in \sfail\ that are responsible for the failure down the line. A Cause-Effect-Chain from the input to the failure is then created by chaining together the results of each state comparison. The CEC can give a detailed look into the root cause of the error.\\
 
-Consider as an example the above example program \reffail\ that crashes GCC. Applying GCC on $fail.c$ is regarded as \rfail\ and applying GCC to an empty C program as \rpass\ (compiling no code obviously terminates correctly). Andreas Zeller's experimental \textit{HOWCOME} algorithm\footnote{The \textit{HOWCOME} algorithm uses Delta Debugging as desribed above and incorporates technical issues like the extraction of program states and applying the test and analysis framework \cite{Zeller:2002:ICC:587051.587053}.}
-compares the runs at the function \textit{main} shortly after the start of the program, at the function $combine\_instructions$ in the middle of the program run and at the last hit of the function $if\_then\_else\_cond$ shortly before the failure. \textit{HOWCOME} yields a \href{fig:failcec}{Cause-Effect-Chain} that includes the comparisons at those locations.
+Consider as an example the above example program \reffail\ that crashes GCC. Applying GCC on $fail.c$ is regarded as \rfail\ and applying GCC to an empty C program as \rpass\ (compiling no code obviously terminates correctly). Andreas Zeller's experimental \textit{HOWCOME} algorithm\footnote{The \textit{HOWCOME} algorithm uses Delta Debugging as described above and incorporates technical issues like the extraction of program states and applying the test and analysis framework \cite{Zeller:2002:ICC:587051.587053}.}
+compares the runs at the function \textit{main} shortly after the start of the program, at the function $combine\_instructions$ in the middle of the program run and at the last hit of the function $if\_then\_else\_cond$ shortly before the failure. \textit{HOWCOME} yields a \hyperref[fig:failcec]{Cause-Effect-Chain} that includes the comparisons at those locations.
 
 \begin{figure}[h!]
 	\fbox{
@@ -433,11 +443,11 @@ compares the runs at the function \textit{main} shortly after the start of the p
 			\end{enumerate}
 		\end{minipage}
 	}
-	\caption{The Cause-Effect-Chain that is deduced by \textit{HOWCOME} for \reffail \cite{Zeller:2002:ICC:587051.587053}.}
+	\caption{The Cause-Effect-Chain that is deduced by \textit{HOWCOME} for \reffail\ \cite{Zeller:2002:ICC:587051.587053}.}
 	\label{fig:failcec}
 \end{figure}
 
-The CEC contains the cause for the failure but the fault in the program has to be extracted by the programmer as it is a question of intended vs faulty states. The programmer uses the CEC to find the transition between the last intended and the first faulty program state. In between these two states a more detailled analysis can be conducted using a finer granularity of compared program states which eventually leads to the error in the program itself. The distinction between intended and faulty states may also be conducted by heuristics which would allow the system to automatically search with a finer granularity in the desired section of the runs.
+The CEC contains the cause for the failure but the fault in the program has to be extracted by the programmer as it is a question of intended vs faulty states. The programmer uses the CEC to find the transition between the last intended and the first faulty program state. In between these two states a more detailed analysis can be conducted using a finer granularity of compared program states which eventually leads to the error in the program itself. The distinction between intended and faulty states may also be conducted by heuristics which would allow the system to automatically search with a finer granularity in the desired section of the runs.
 
 
 
@@ -455,14 +465,21 @@ After generating random test cases it would be useful to minimize the failing te
 	\item The \textit{test} function models the execution of the instructions in the test driver. The instructions are always executed in the same order as they were in the original randomly generated failing test case. 
 \end{itemize}
 
-Both \ddp\ and \dddiff\ can be used in this scenario. \ddp\ will return a minimal sequence of instruction that induces the same error as the original test case whereas \dddiff\ returns two test cases, one passing and one failing, with a minimal difference. \dddiff\ will likely be more efficient (\cite{Zeller:2002:SIF:506201.506206})
+Both \hyperref[fig:ddp]{\ddp} and \hyperref[fig:dddiff]{\dddiff} can be used in this scenario. \ddp\ will return a minimal sequence of instruction that induces the same error as the original test case whereas \dddiff\ returns two test cases, one passing and one failing, with a minimal difference. \dddiff\ will likely be more efficient (\cite{Zeller:2002:SIF:506201.506206})
  but it remains a matter of context which result is more useful for the debugging of the program code.\\
 
-To improve the runtime of the test case minimization static slicing can be initially applied to the test cases. In static slicing Read-Write-Data-Dependencies between the instructions are analyzed and only the instructions that could influence the last instruction remain in the test. This method is a static analysis of the test cases, meaning it does not actually need to execute the tests in order to find instructions that are irrelevant for the failure. This gives static slicing a runtime advantage compared to minimization by Delta Debugging. At the same time static slicing is not as effective as DD minimization. A combination of both, that is first applying static slicing and then DD minimization, will retain the advantages of both methods, though: It has a lower runtime but is just as efficient as DD minimization \cite{Leitner:2007:EUT:1321631.1321698}.
+Static slicing can be initially applied to the test cases to improve the runtime of the test case minimization. In static slicing Read-Write-Data-Dependencies between the instructions are analyzed and only the instructions that could influence the last instruction remain in the test. This method is a static analysis of the test cases, meaning it does not actually need to execute the tests in order to find instructions that are irrelevant for the failure. This gives static slicing a runtime advantage compared to minimization by Delta Debugging. At the same time static slicing is not as effective as DD minimization. A combination of both, that is first applying static slicing and then DD minimization, will retain the advantages of both methods, though: It has a lower runtime but is just as efficient as DD minimization \cite{Leitner:2007:EUT:1321631.1321698}.
 
-\section{Reflection and conclusion}
-\subsection{Abstractness: strength and weakness}
-\subsection{Conclusion}
+\section{Contribution}
+\label{sec:contribution}
+
+This paper is not a research paper. It only summarizes work of others from the given citations and does not incorporate any research conducted by the author. The content of sections \ref{sec:what_is_dd}, \ref{sec:formalizing_concepts} and \ref{sec:ddalgorithms} is mostly taken from \cite{Zeller:1999:YMP:318774.318946}. \dddiff\ is taken from \cite{Zeller:2002:SIF:506201.506206} where it is called \textit{dd}. The use cases in section \ref{sec:use_cases} and most importantly the $fail.c$ case studies have been taken from \cite{Zeller:2002:ICC:587051.587053} and \cite{Lei:2005:MRU:1104997.1105255}. Static slicing in section \ref{sec:use_cases} is a concept portrayed in \cite{Leitner:2007:EUT:1321631.1321698}.
+
+\section{Conclusion}
+\label{sec:conclusion}
+Zeller initially defined Delta Debugging as abstract as possible \cite{Zeller:1999:YMP:318774.318946}. This allows the method to be applied to a variety of use cases in testing and debugging as outlined in section \ref{sec:use_cases}. The abstractness is also a weakness, though, as in praxis every time Delta Debugging is applied a variety of these abstract concepts need to be concretized. Bringing the Delta Debugging algorithms that are portrayed in section \ref{sec:ddalgorithms} into a practical context might still be a lot of work to the human debugger.
+
+Nonetheless Delta Debugging has its rightful place in the scientific approach to debugging as the idea continues to find new uses today, almost 20 years after its introduction by Zeller (The \href{https://dl.acm.org/dl.cfm}{ACM Digital Library} mentions 6 papers directly incorporating Delta Debugging in 2017/2018). An important development of Delta Debugging is Hierarchical Delta Debugging \cite{Misherghi:2006:HHD:1134285.1134307} which speeds up the process by making use of hierarchical structures in data, e.g. when debugging XML code.
 
 \bibliography{article}
 
