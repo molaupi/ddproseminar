@@ -58,6 +58,7 @@
 	- The subset is a minimal failure inducing subset if the the changes are safe, i.e. they result in a consistent configuration
 	- The time complexity of dd is at most linear in the number of changes
 
+# Use cases
 ## Use case 1: Analyzing program input
 	- We want to look at two use cases for DD.
 	- First a simple use case: Using DD to find out which part of a program input is responsible for a program crash
@@ -97,3 +98,9 @@
 	- The developer can see that a cycle is created in a tree pointer structure
 	- The CEC states this cycle as the exact reason for the crash
 	- The developer now has detailled knowledge over the error and knows to work on the way the RTL tree is handled
+
+# Conclusion
+	- Delta Debugging is an extremely abstract concept
+		- advantageous because it can be applied to a variety of use cases
+		- disadvantageous because a lot of work needs to be put into concretizing the concepts before the algorithms can actually be used
+	- DD often acts as the base idea to a solution for a specific problem and is tweaked and adapted to that specific problem  

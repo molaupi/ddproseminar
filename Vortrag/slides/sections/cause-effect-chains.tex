@@ -32,7 +32,7 @@
 			\item A variable only present in one state
 			\item A different value of a variable present in both states
 		\end{itemize}
-		\item With this the runs $r_\cmark$ and $r_\xmark$ can be compared in different significant locations. 
+		%\item With this the runs $r_\cmark$ and $r_\xmark$ can be compared in different significant locations. 
 		\item We use delta debugging to find the current $(variable, value)$ pairs that are responsible for the failure of $r_\xmark$ further down the line.
 	\end{itemize}
 
@@ -97,8 +97,8 @@
 			It is now easy to see for the developer why \texttt{fail.c} crashes GCC: \\[1em]
 
 			\onslide<2->{\begin{enumerate}
-				\only<2>{\item A \red{cycle in the RTL tree} of the GCC compiler is created at the 95th hit of \textbf{if\_then\_else\_cond}.}
-				\onslide<3>{\item A cycle in the RTL tree of the GCC compiler is created at the 95th hit of \textbf{if\_then\_else\_cond}.} 
+				\only<2>{\item A \red{cycle in the RTL tree} of GCC is created at the 95th hit of \textbf{if\_then\_else\_cond}.}
+				\onslide<3>{\item A cycle in the RTL tree of GCC is created at the 95th hit of \textbf{if\_then\_else\_cond}.} 
 				\onslide<3>{\item The \red{cycle produces the error}.}
 			\end{enumerate}}
 		\end{column}
