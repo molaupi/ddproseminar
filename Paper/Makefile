@@ -3,16 +3,14 @@ DOKUMENT = article
 make:
 	pdflatex $(DOKUMENT).tex -output-format=pdf -shell-escape
 
+bib:
+	bibtex $(DOKUMENT).aux
+
 clean:
-	rm -f *.vrb *.aux *.log *.nav *.out *.snm *.toc *.bbl *.blg *.zip *~
+	rm -f *.vrb *.log *.nav *.out *.snm *.toc *.blg *.zip *~
 
 full:
 	make
+	make bib
 	make
 	make clean
-
-handout:
-	pdflatex  '\def\handout{1} \input{$(DOKUMENT).tex}' -output-format=pdf -shell-escape
-	pdflatex  '\def\handout{1} \input{$(DOKUMENT).tex}' -output-format=pdf -shell-escape
-	make clean
-	mv $(DOKUMENT).pdf $(DOKUMENT)-handout.pdf
