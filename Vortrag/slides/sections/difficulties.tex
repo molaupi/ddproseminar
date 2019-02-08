@@ -9,7 +9,7 @@
 	%\end{itemize}
 
 	\begin{alertblock}{Difficulty \hashtag 1: Interference}
-		Let $c_1,c_2 \in \C$. $c_1$ and $c_2$ \textbf{interfere} when $test(c_1)=\cmark$, $test(c_2)=\cmark$ but $test(c_1\cup c_2) = \xmark$.
+		Let $c_1,c_2 \subseteq \C$. $c_1$ and $c_2$ \textbf{interfere} when $test(c_1)=\cmark$, $test(c_2)=\cmark$ but $test(c_1\cup c_2) = \xmark$.
 	\end{alertblock}
 
 	\bigskip
@@ -57,7 +57,9 @@
 
 	\pause
 	\begin{exampleblock}{Idea: More granular subsets}
-		If less changes are applied at once the chances of an inconsistent result are reduced. Hence, if the algorithm cannot find any consistent confgurations reduce the number of changes per subset.
+		If less changes are applied at once the chances of an inconsistent result are reduced. \\[.5em]
+
+		$\Rightarrow$ If $test(c_1 \cup c_2) = \qmark$ search in $c_1$ and $c_2$ individually instead.
 	\end{exampleblock}
 
 \end{frame}
