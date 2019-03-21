@@ -7,7 +7,7 @@
 
 \title{A summary on Delta Debugging and its uses}
 
-\author{Moritz C. Laupichler}{Fakultät für Informatik, Karlsruhe Institute of Technology, Germany}{moritz.laupichler@student.kit.edu}{}{}
+\author{Moritz C. Laupichler}{Department of Informatics, Karlsruhe Institute of Technology, Germany}{moritz.laupichler@student.kit.edu}{}{}
 
 \authorrunning{M.\, C. Laupichler}
 
@@ -46,7 +46,7 @@
 
 % Colors
 \usepackage{xcolor}
-\definecolor{td-green}{rgb}{0,.59,.51}
+\definecolor{td-green}{rgb}{0,.5, 0}
 
 %%%%%%%%%%%% Custom Commands %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -101,7 +101,7 @@
 \maketitle
 
 \begin{abstract}
-	Debugging is tedious work for any programmer. This thought sparked the concept of Delta Debugging. In the late 90's and early 2000's Andreas Zeller abstracted a simplistic scenario (``\yd\ my program worked, \td\ it does not. Why?'') into algorithmically tackling debugging. The goal is simple: If every change between \yd\ and \td\ is seen as a Delta, which Deltas are responsible for the failure of \td?
+	Debugging is tedious work for any programmer. This thought sparked the concept of Delta Debugging which was first described by Andreas Zeller in the late 90's and early 2000's. A simplistic scenario (``\yd\ my program worked, \td\ it does not. Why?'') was abstracted into algorithmically tackling debugging. The goal is simple: If every change between \yd\ and \td\ is seen as a Delta, which Deltas are responsible for the failure \td?
 
 	This paper summarizes Zeller's early work on Delta Debugging \cite{Zeller:1999:YMP:318774.318946} and further gives an overview about several use cases for Delta Debugging that have been found in the early 2000's. 
 \end{abstract}
@@ -109,12 +109,12 @@
 \section{What is Delta Debugging?}
 \label{sec:what_is_dd}
 
-This section outlines the scenario that acts as the base for all following definitions and gives an idea of how Delta Debugging is useful.
+This section outlines the scenario that acts as the base for all following definitions and gives an idea of the goal of Delta Debugging.
 
 \subsection{Yesterday and today}
 \label{ydandtd}
 
-Imagine a software development process where the latest changes to the code cause known tests to fail even though an older version of the code passed these exact tests. As the basis of the Delta Debugging principle we need to define a simple abstraction of this point in the development process: We know a state \yd\ that passes the tests and a state \td\ that fails the tests. Furthermore we know all changes that when applied to \yd\ yield \td. \\
+Imagine a software development process where the latest changes to the code cause known tests to fail even though an older version of the code passed these exact tests. As the base of the Delta Debugging principle we need to define a simple abstraction of this point in the development process: We know a state \yd\ that passes the tests and a state \td\ that fails the tests. Furthermore we know all changes that yield \td\ when applied to \yd.\\
 The goal of Delta Debugging is to automate extraction of the exact changes to \yd\ that cause the failure in \td.  
 
 \subsection{The simple idea}
@@ -145,11 +145,11 @@ The ideas described above need to be abstracted and formalized in order to appro
 Let $c \subseteq \C$ be a configuration. $test(c)$ models a suite of regression tests being run on the result of applying all changes in $c$ to \yd. So by definition $test(\emptyset) = \cmark$ ("Yesterday passes") and $test(\C) = \xmark$ ("Today fails") hold.
 
 \definition \defsub{Failure-inducing configuration} A configuration $c$ is called \textbf{failure-inducing} iff 
-\[ \forall c' (c \subseteq c' \subseteq \C \rightarrow test(c') \ne \cmark) \] 
+\[ \forall c' : c \subseteq c' \subseteq \C \Rightarrow test(c') \ne \cmark \] 
 holds.
 
 \definition \defsub{Minimal failure-inducing configuration} A failure-inducing configuration $c$ is \textbf{minimal} iff 
-\[ \forall c' \subset c: test(c') \ne \xmark \]
+\[ \forall c' \subsetneq c: test(c') \ne \xmark \]
 holds.\\
 
 
@@ -158,21 +158,24 @@ These terms abstract the software development situation described in \ref{ydandt
 \section{Incrementally approaching a plausible DD algorithm}
 \label{sec:ddalgorithms}
 
-There is two major difficulties when approaching a Delta Debugging algorithm: interference and inconsistency. A na\"ive Delta Debugging algorithm called \sdd\ will be refined into the \dd\ algorithm and the \ddp\ algorithm in this chapter in order to describe and solve both difficulties. Finally, isolation of a minimal-failure inducing difference, an alternative approach to DD, is portrayed through the \dddiff\ algorithm.
+There are two major difficulties when approaching a Delta Debugging algorithm: interference and inconsistency. A na\"ive Delta Debugging algorithm called \sdd\ will be refined into the \dd\ algorithm and the \ddp\ algorithm in this chapter in order to describe and solve both difficulties. Finally, isolation of a minimal-failure inducing difference, an alternative approach to DD, is portrayed through the \dddiff\ algorithm.
 
 \subsection{A na\"ive algorithm: \sdd}
 
-The na\"ive algorithm \sdd\ recursively splits \C\ into smaller and smaller parts until one failure-inducing change is found. In each recursion step the current set of changes, $c$, is partitioned in two halves, $c_1$ and $c_2$, and both halves are tested. The half that fails the tests is regarded in the next recursion step. The algorithm knows two cases, "Found in $c_1$" and "Found in $c_2$".
+The na\"ive algorithm \hyperref[fig:sdd]{\sdd} as shown in Figure \ref{fig:sdd} recursively splits \C\ into smaller and smaller parts until one failure-inducing change is found. In each recursion step the current set of changes, $c$, is partitioned into two halves, $c_1$ and $c_2$, and both halves are tested. The half that fails the tests is regarded in the next recursion step. The algorithm knows two cases, "Found in $c_1$" and "Found in $c_2$".
 \\
 \begin{figure}[h!]
 \fbox{\begin{minipage}{\textwidth}
+$simpledd(\C) = dd_1(\C)$ where \\
 	
 \begin{algorithmic}[1]
-		\Function{simpledd}{$c: 2^{\C}$}
+		\Function{$dd_1$}{$c: 2^{\C}$}
 			\If{$|c| = 1$} \Return $c$ \EndIf
-			\State Partition $c$ into two halves $c_1$, $c_2$ so that $c_1 \cap c_2 = \emptyset$
-			\If{($test(c_1) = \xmark$)} \Return $simpledd(c_1)$ \Comment("Found in $c_1$") \Else{} \Return $simpledd(c_2)$ \Comment("Found in $c_2$")
-			\EndIf
+			\State Partition $c$ arbitrarily into two parts $c_1$, $c_2$ such that $|c_1| \approx |c_2| \approx |c|/2$
+			\State \Return $\left \{ \text{\begin{tabular}{l l r}
+				$dd_1(c_1)$ & if $test(c_1) = \xmark$ & \Comment("Found in $c_1$") \\
+				$dd_1(c_2)$ & otherwise & \Comment("Found in $c_2$")
+			\end{tabular}}\right.$
 		\EndFunction
 \end{algorithmic}
 \end{minipage}}
@@ -180,30 +183,36 @@ The na\"ive algorithm \sdd\ recursively splits \C\ into smaller and smaller part
 \label{fig:sdd}
 \end{figure}
 \\
+
+\begin{samepage}
+	
 It becomes evident that this algorithm is not effective because it is only capable of finding single changes that cause failure on their own. But what if multiple changes pass the test individually but only their combination induces failure? \\
 
 \definition \defsub{Interference} Two configurations $c_1$ and $c_2$ \textbf{interfere} iff $test(c_1) = \cmark$, $test(c_2) = \cmark$ but $test(c_1 \cup c_2) = \xmark$. \\
+\end{samepage}
+
 
 \subsection{Dealing with interference: \dd}
 
-\sdd\ is unable to handle the case of both $c_1$ and $c_2$ passing. A new algorithm \dd\ is created which behaves like \sdd\ but incorporates the case "Interference". In this case the algorithm searches for the failure-inducing change in $c_1$ while keeping $c_2$ applied and vice versa. By combining the results of both searches the interfering changes can be extracted.
+\sdd\ is unable to handle the case of both $c_1$ and $c_2$ passing i.e. interfering configurations. A new algorithm \dd\ is created which behaves like \sdd\ but incorporates the case "Interference" as shown in Figure \ref{fig:dd}. In this case the algorithm searches for the failure-inducing change in $c_1$ while keeping $c_2$ applied and vice versa. By combining the results of both searches the interfering changes can be extracted.
 \\
 \begin{figure}[h!]
 \fbox{\begin{minipage}{\textwidth}
 	
-$dd = dd_2(\C, \emptyset)$ where \\
+$dd(\C) = dd_2(\C, \emptyset)$ where \\
 
 \begin{algorithmic}[1]
 	\Function{$dd_2$}{$c,r:2^\C$} $: 2^{\C}$
-	\State let $c_1,c_2 \subseteq c \text{ with } c_1 \cup c_2 = c, c_1 \cap c_2 = \emptyset, |c_1| \approx |c_2|$
+	\State Partition $c$ arbitrarily into two parts $c_1$, $c_2$ such that $|c_1| \approx |c_2| \approx |c|/2$
 	\State $d_1 = dd_2(c_1, c_2 \cup r)$ \Comment("Search in $c_1$ while leaving $c_2$ applied")
 	\State $d_2 = dd_2(c_2, c_1 \cup r)$ \Comment("Search in $c_2$ while leaving $c_1$ applied")\medskip  
-	\State \Return $ \begin{cases}
-			c & \text{if } |c|=1, \\
-			dd_2(c_1,r) & \text{if } test(c_1 \cup r) = \xmark, \text{\Comment("Found in $c_1$")}\\
-			dd_2(c_2,r) & \text{if } test(c_2 \cup r) = \xmark, \text{\Comment("Found in $c_2$")}\\
-			d_1 \cup d_2 & \text{otherwise } \text{\Comment("Interference")}
-		\end{cases}$
+	\State \Return $\left \{ \text{\begin{tabular}{l l r}
+			$c$ & if $|c|=1$ & \Comment("Found") \\
+			$dd_2(c_1,r)$ & if $test(c_1 \cup r) = \xmark$ & \Comment("Found in $c_1$")\\
+			$dd_2(c_2,r)$ & if $test(c_2 \cup r) = \xmark$ & \Comment("Found in $c_2$")\\
+			$d_1 \cup d_2$ & otherwise & \Comment("Interference")
+		\end{tabular}}
+			\right.$
 	\EndFunction
 \end{algorithmic}
 \end{minipage}}
@@ -218,44 +227,44 @@ In \dd\ changes are combined arbitrarily and then tested. It is possible that no
 
 \definition \defsub{Inconsistent configuration} A configuration $c \subseteq \C$ is called \textbf{inconsistent} iff $test(c) = \qmark$. \\
 
-In the real world of code and regression tests this scenario is most likely caused by a combination of changes resulting in syntactical or semantical errors. An inconsistent configuration may also occur when a change is dependent on another change not included in the configuration or when the program execution fails during testing. 
+In the real world of code and regression tests this scenario is most likely caused by a combination of changes resulting in syntactical or semantic errors. An inconsistent configuration may also occur when a change is dependent on another change, that is not included in the configuration, or when the program execution fails during testing. 
 
-\dd\ does not deal with inconsistent configurations. It behaves wrong if the configurations that are tested in the "Found" cases are inconsistent.
+\dd\ does not deal with inconsistent configurations. It delivers wrong results if the configurations that are tested in the "Found" cases are inconsistent.
 
 
 \subsection{Dealing with inconsistency: \ddp}
 
-The key to solving inconsistency is partitioning $c$ into more than two subsets making the sets of changes smaller. We know that the baseline $\emptyset$ and applying all changes $\C$ are consistent. By applying less changes to \yd\ or removing less changes from \td\ (s. case "Preference" below). the chances of the result being consistent is increased. If the algorithm runs into only inconsistent configurations the number of subsets is increased and the chances of at least one configuration being consistent after is increased. This solution requires the final Delta Debugging algorithm to handle any number $n$ of subsets whereas \dd\ only handles two change sets, $c_1$ and $c_2$ at a time.
+The key to solving inconsistency is partitioning $c$ into more than two subsets making the sets of changes smaller. We know that the baseline $\emptyset$ and applying all changes $\C$ are consistent. By applying less changes to \yd\ or removing less changes from \td\ (s. case "Preference" below) the chances of the result being consistent are increased. If the algorithm runs into only inconsistent configurations the number of subsets is increased, thus increasing the chances of at least one configuration being consistent after. This solution requires the new Delta Debugging algorithm to handle any number $n$ of subsets whereas \dd\ only handles two change sets, $c_1$ and $c_2$, at a time.
 
-\definition \defsub{Complement of configuration} Let $c \subseteq \C$ be a configuration. The configuration $\bar{c}$ is called the \textbf{complement} of $c$. It contains all changes that are contained in the current search but not in $c$.\\
+\definition \defsub{Complement of configuration} Let $c \subseteq \C$ be a configuration that is currently being searched for failure-inducing changes. Let $r \subseteq \C$ be the changes that remain applied during the search. For a subset $a \subseteq c$ the \textbf{complement} is $\bar{a} = c \setminus (a \cup r)$.\\
 
-The final Delta Debugging algorithm \ddp\ on the subsets $c_1, \dots, c_n$ knows four cases:\\
+The new Delta Debugging algorithm \ddp\ on the subsets $c_1, \dots, c_n$ as shown in Figure \ref{fig:ddp} knows four main cases:\\
 \begin{description}
 	\item["Found in $c_i$"] If testing any $c_i$ fails it contains a failure-inducing subset. Continue search in $c_i$.
 	\item["Interference"] If any $c_i$ and $\bar{c_i}$ both pass they form an interference. Continue as in \dd.
 	\item["Preference"] If any $c_i$ is unresolved but $\bar{c_i}$ passes then $c_i$ contains a failure-inducing subset. $c_i$ is then preferred. Continue search in $c_i$ while leaving $\bar{c_i}$ applied to promote consistency.
-	\item["Try Again"] If none of the above cases apply then continue the search with $2n$ subsets. The chance of consistent configurations is increased.
+	\item["Try Again"] If none of the above cases apply then continue the search with $2n$ subsets. The chances of consistent configurations are increased.
 \end{description}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 \fbox{\begin{minipage}{\textwidth}
 	
-$dd^+(c) = dd_3(c, \emptyset,2)$ where \\
+$dd^+(\C) = dd_3(\C, \emptyset,2)$ where \\
 
 \begin{algorithmic}[1]
 	\Function{$dd_3$}{$c,r:2^\C, n: \nN$} $: 2^{\C}$
-	\State let $c_1,\dots,c_n \subseteq c \text{ with } \bigcup c_i = c, c_i \text{ pairwise disjoint}, \forall i: |c_i| \approx |c|/n$
+	\State Partition $c$ arbitrarily into $n$ parts $c_1, \dots, c_n$ such that $\forall i: |c_i| \approx |c|/n$
 	\State let $\bar{c_i} = c \setminus (c_i \cup r), t_i = test(c_i \cup r), \bar{t_i} = test(\bar{c_i} \cup r)$
-	\State let $c' = c \cap \bigcap \set{\bar{c_i} \mid \bar{t_i} = \xmark}, r' = r \cup \bigcup \set{c_i \mid t_i = \cmark}, n' = min (\mid c' \mid, 2n)$
-	\State let $d_i = dd_3(c_i, \bar{c_i} \cup r, 2), \bar{d_i} = dd_3(\bar{c_i},c_i \cup r, 2)$ 
-	\State \Return $ \begin{cases}
-			c & \text{if } |c|=1, \text{\Comment("Found")}\\
-			dd_3(c_i, r, 2) & \text{if } t_i = \xmark \text{ for some i \Comment("Found in $c_i$")}\\
-			d_i \cup \bar{d_i} & \text{if } t_i = \cmark \wedge \bar{t_i} = \cmark \text{ for some i \Comment("Interference")}\\
-			d_i & \text{if } t_i = \qmark \wedge \bar{t_i} = \cmark \text{ for some i \Comment("Preference")}\\
-			dd_3(c',r',n') & \text{if } n < \mid c \mid \text{\Comment("Try Again")}\\
-			c' & \text{otherwise \Comment("Nothing Left")}
-		\end{cases}$
+	\State let $c' = c \cap \bigcap \set{\bar{c_i} \mid \bar{t_i} = \xmark}, r' = r \cup \bigcup \set{c_i \mid t_i = \cmark}, n' = min (|c'|, 2n)$
+	\State let $d_i = dd_3(c_i, \bar{c_i} \cup r, 2), \bar{d_i} = dd_3(\bar{c_i},c_i \cup r, 2)$
+	\State \Return $\left \{ \text{\begin{tabular}{l l r}
+		$c$ & if |c|=1 & \Comment("Found")\\
+		$dd_3(c_i, r, 2)$ & if $t_i = \xmark$ for some $i$ & \Comment("Found in $c_i$")\\
+		$d_i \cup \bar{d_i}$ & if $t_i = \cmark \wedge \bar{t_i} = \cmark$ for some $i$ & \Comment("Interference")\\
+		$d_i$ & if $t_i = \qmark \wedge \bar{t_i} = \cmark$ for some $i$ & \Comment("Preference")\\
+		$dd_3(c',r',n')$ & if $n < |c|$ & \Comment("Try Again")\\
+		$c'$ & otherwise & \Comment("Nothing Left")
+	\end{tabular}}\right.$
 	\EndFunction
 \end{algorithmic}
 \end{minipage}}
@@ -263,7 +272,7 @@ $dd^+(c) = dd_3(c, \emptyset,2)$ where \\
 \label{fig:ddp}
 \end{figure}
 
-\lemma \ddp\ returns a minimal failure-inducing subset of changes as long as the subset is safe, that is they can be applied to the baseline or removed from \td\ without causing an inconsistency. \ddp\ has linear time complexity.
+\lemma \ddp\ returns a minimal failure-inducing subset of changes as long as the subset is safe, i.e. they can be applied to \yd\ or removed from \td\ without causing an inconsistency. \ddp\ has linear time complexity.
 
 \proof See \cite{Zeller:1999:YMP:318774.318946}.
 
@@ -271,47 +280,17 @@ $dd^+(c) = dd_3(c, \emptyset,2)$ where \\
 
 All the above Delta Debugging algorithms have focused on simplification of a failing configuration. The idea of simplification is to eliminate as many non-failure-inducing changes from $\C$ as possible to find out what the actual changes between \yd\ and \td\ were that cause the failure today.
 
-Another goal that can be achieved by Delta Debugging is the isolation of the minimal failure-inducing difference between \yd\ and \td. Isolation means to replicate this difference through two other configurations \cpass\ and \cfail\ that will not not make any sense from a production standpoint but portray the difference in a minimal and thus simple to understand fashion. This is exactly what the programmer wants when debugging the code: A simplistic reconstruction of what separates passing code from the known failing code in the given context, i.e. the reason why \td\ fails.\\
+Another goal that can be achieved by Delta Debugging is the isolation of the minimal failure-inducing difference between \yd\ and \td. Isolation means to replicate this difference through two other configurations \cpass\ and \cfail\ that will not make any sense from a production standpoint but portray the difference in a minimal and thus simple to understand fashion. This is exactly what the programmer wants when debugging the code: A simplistic reconstruction of what separates passing code from the known failing code in the given context, i.e. the reason why \td\ fails.\\
 
-In more technical terms the goal is to find two configurations \cpass and \cfail, such that $\emptyset \subseteq \cpass \subset \cfail \subseteq \C$, $test(\cpass) = \cmark$ and $test(\cfail) = \xmark$ hold and the difference between the configurations $\Delta = \cfail \setminus \cpass$ is minimal.
+In more technical terms the goal is to find two configurations \cpass\ and \cfail, such that $\emptyset \subseteq \cpass \subsetneq \cfail \subseteq \C$, $test(\cpass) = \cmark$ and $test(\cfail) = \xmark$ hold and the difference between the configurations $\Delta = \cfail \setminus \cpass$ is minimal.
 
-\definition \label{def:minimal_difference} \defsub{Minimal failure-inducing difference} Let \cpass\ and \cfail\ be two test cases with $\emptyset \subseteq \cpass \subset \cfail \subseteq \C$. Their difference $\Delta = \cfail \setminus \cpass$ is \textbf{minimal} iff \[ \forall \Delta_i \subset \Delta : test(\cpass \cup \Delta_i) \ne \cmark \wedge test(\cfail \setminus \Delta_i) \ne \xmark \]
+\definition \label{def:minimal_difference} \defsub{Minimal failure-inducing difference} Let \cpass\ and \cfail\ be two test cases with $\emptyset \subseteq \cpass \subsetneq \cfail \subseteq \C$. Their difference $\Delta = \cfail \setminus \cpass$ is \textbf{minimal} iff \[ \forall \Delta' \subsetneq \Delta : test(\cpass \cup \Delta') \ne \cmark \text{ and } test(\cfail \setminus \Delta') \ne \xmark \]
 
 The number of subsets of $\Delta$ is exponential so we relax the definition of minimality to n-minimality.
 
-\definition \label{def:n-minimal_difference} \defsub{N-minimal failure-inducing difference} Let \cpass\ and \cfail\ be defined as above. Their difference $\Delta = \cfail \setminus \cpass$ is \textbf{n-minimal} iff \[ \forall \Delta_i \subset \Delta : |\Delta_i| \le n \Rightarrow test(\cpass \cup \Delta_i) \ne \cmark \wedge test(\cfail \setminus \Delta_i) \ne \xmark \] 
+\definition \label{def:n-minimal_difference} \defsub{N-minimal failure-inducing difference} Let \cpass\ and \cfail\ be defined as above. Their difference $\Delta = \cfail \setminus \cpass$ is \textbf{n-minimal} iff \[ \forall \Delta' \subsetneq \Delta : |\Delta'| \le n \Rightarrow (test(\cpass \cup \Delta') \ne \cmark \text{ and } test(\cfail \setminus \Delta') \ne \xmark) \] 
 
 We aim at finding two configurations with a \textit{1-minimal failure-inducing difference} - that is a configuration \cfail\ where taking away any change $\delta \in \Delta$ will make the failure disappear.\\
-
-\begin{figure}[t]
-	\fbox{
-		\begin{minipage}{\textwidth}
-		The goal of \dddiff\ is to find $(\cfail, \cpass) = \dddiff(\C)$ such that $\emptyset \subseteq \cpass \subset \cfail \subseteq \C$, $test(\cpass) = \cmark$, $test(\cfail) = \xmark$, and $\Delta = \cfail \setminus \cpass$ is 1-minimal.\\
-
-		The \dddiff\ algorithm is $\dddiff(\C)=dd_4(\emptyset, \C, 2)$ where
-
-				\begin{algorithmic}[1]
-					\Function{$dd_4$}{$\cpass,\cfail:2^{\C}$, $n: \nN$}: $2^{\C} \times 2^{\C}$
-					\State let $\Delta = \cfail \setminus \cpass$
-					\State let $\Delta = \bigcup^{n}_{i=1} \Delta_i$ with all $\Delta_i$ pairwise disjoint and $\forall \Delta_i: |\Delta_i| \approx |\Delta|/n$
-					\State let $t_{\cmark, i} = test(\cpass \cup \Delta_i)$ for $i \in \set{1, \dots, n}$ \Comment(``test for larger passing configuration'')
-					\State let $t_{\xmark, i} = test(\cfail \setminus \Delta_i)$ for $i \in \set{1, \dots, n}$ \Comment(``test for smaller failing configuration'')
-					\State \Return $\begin{cases}
-						dd_4(\cpass, \cpass \cup \Delta_i,2) & \text{if } \; t_{\cmark, i} = \xmark \text{\Comment(``reduce to subset'')} \\
-						dd_4(\cfail \setminus \Delta_i, \cfail, 2) & \text{if } t_{\xmark, i} = \cmark \text{\Comment(``increase to complement'')}\\
-						dd_4(\cpass \cup \Delta_i, \cfail, max(n-1, 2)) & \text{if } t_{\cmark, i} = \cmark \text{\Comment(``increase to subset'')}\\
-						dd_4(\cpass, \cfail \setminus \Delta_i, max(n-1,2)) & \text{if } t_{\xmark, i} = \xmark \text{\Comment(``reduce to complement'')}\\
-						dd_4(\cpass, \cfail, min(2n, |\Delta|)) & \text{if } n < |\Delta| \text{\Comment(``increase granularity'')} \\
-						(\cpass, \cfail) & \text{otherwise \Comment(``done'')} 
-					\end{cases}$
-					(check the first cases for all $i \in \set{1, \dots, n}$)
-					\EndFunction
-				\end{algorithmic}
-		\end{minipage}
-	}
-	\caption{The Delta Debugging algorithm for finding two configurations with minimal difference, \dddiff.}
-	\label{fig:dddiff}
-\end{figure}
 
 The idea of the isolation algorithm \dddiff\ is to increase the size of \cpass\ or decrease the size of \cfail\ until their difference is 1-minimal. The algorithm is initialized with $\cpass = \emptyset$ and $\cfail = \C$. The difference $\Delta = \cfail \setminus \cpass$ is partitioned into $n$ disjoint subsets $\Delta_1, ..., \Delta_n$ much as in \ddp. Then the following cases are evaluated:
 
@@ -323,7 +302,36 @@ The idea of the isolation algorithm \dddiff\ is to increase the size of \cpass\ 
   	\item[``increase granularity''] If none of the above cases apply, i.e. the tests all remain unresolved, then the granularity of the partition of $\Delta$ is increased as in \ddp. 
   	\item[``done''] If $n \ge |\Delta|$ the granularity can not be increased further. In that case every $\Delta_i$ only contains one change. If \cpass\ cannot be increased and \cfail\ not be reduced at that point, the difference between them is 1-minimal and they are returned.\\
 \end{description}
-The full \dddiff\ algorithm is shown in Figure \ref{fig:dddiff}. It is described by Zeller as the successor to \hyperref[fig:ddp]{\ddp} and is recommended to generally replace \ddp\ \cite{Zeller:2002:SIF:506201.506206}. \\
+The full \dddiff\ algorithm is shown in Figure \ref{fig:dddiff}. It is described by Zeller as the successor to \hyperref[fig:ddp]{\ddp} and is recommended to generally replace \ddp\ as it is superior in performance and result quality \cite{Zeller:2002:SIF:506201.506206}. \\
+
+\begin{figure}[H]
+	\fbox{
+		\begin{minipage}{\textwidth}
+
+		$\dddiff(\C)=dd_4(\emptyset, \C, 2)$ where \\
+
+				\begin{algorithmic}[1]
+					\Function{$dd_4$}{$\cpass,\cfail:2^{\C}$, $n: \nN$}: $2^{\C} \times 2^{\C}$
+					\State let $\Delta = \cfail \setminus \cpass$
+					\State Partition $\Delta$ arbitrarily into $n$ parts $\Delta_1, \dots, \Delta_n$ such that $\forall i: |\Delta_i| \approx |\Delta|/n$
+					\State let $t_{\cmark, i} = test(\cpass \cup \Delta_i)$ for $i \in \set{1, \dots, n}$ \Comment(``test for larger passing configuration'')
+					\State let $t_{\xmark, i} = test(\cfail \setminus \Delta_i)$ for $i \in \set{1, \dots, n}$ \Comment(``test for smaller failing configuration'')
+					\State \Return $\left \{ \text{\begin{tabular}{l l r}
+						$dd_4(\cpass, \cpass \cup \Delta_i,2)$ & if $t_{\cmark, i} = \xmark$ & \Comment(``reduce to subset'') \\
+						$dd_4(\cfail \setminus \Delta_i, \cfail, 2)$ & if $t_{\xmark, i} = \cmark$ & \Comment(``increase to complement'')\\
+						$dd_4(\cpass \cup \Delta_i, \cfail, max(n-1, 2))$ & if $t_{\cmark, i} = \cmark$ & \Comment(``increase to subset'')\\
+						$dd_4(\cpass, \cfail \setminus \Delta_i, max(n-1,2))$ & if $t_{\xmark, i} = \xmark$ & \Comment(``reduce to complement'')\\
+						$dd_4(\cpass, \cfail, min(2n, |\Delta|))$ & if $n < |\Delta|$ & \Comment(``increase granularity'')\\
+						(\cpass, \cfail) & otherwise & \Comment(``done'')
+					\end{tabular}}\right.$
+					(check the first cases for all $i \in \set{1, \dots, n}$)
+					\EndFunction
+				\end{algorithmic}
+		\end{minipage}
+	}
+	\caption{The Delta Debugging algorithm for finding two configurations with minimal difference, \dddiff. It finds $(\cfail, \cpass) = \dddiff(\C)$ such that $\emptyset \subseteq \cpass \subsetneq \cfail \subseteq \C$, $test(\cpass) = \cmark$, $test(\cfail) = \xmark$, and $\Delta = \cfail \setminus \cpass$ is 1-minimal.}
+	\label{fig:dddiff}
+\end{figure}
 
 Isolation has two technical advantages over simplification:
 \begin{enumerate}
@@ -339,7 +347,7 @@ In this chapter three exemplary use cases for Delta Debugging will be shown.
 
 \subsection{Program input analysis}
 
-If a certain input is known to cause a program to fail execution Delta Debugging can be used to analyze which part of the program input is responsible for the failure. The \ddp\ algorithm as defined above can be used without any modifications. It is necessary, though, to define certain abstract concepts in the context of input analysis.\\
+If a certain input is known to cause a program to fail execution then Delta Debugging can be used to analyse which part of the program input is responsible for the failure. The \ddp\ algorithm as defined above can be used without any modifications. It is necessary, though, to define certain abstract concepts in the context of input analysis.\\
 \begin{itemize}
   	\item We assume a known minimal input for the program at hand that does not cause failure. In many cases this minimal input would be some sort of "empty" input, be it no data, zero values, etc. This minimal input is regarded as the \yd\ state.
   	\item The known failing input is regarded as the \td\ state.
@@ -349,24 +357,24 @@ If a certain input is known to cause a program to fail execution Delta Debugging
 
 Running \ddp\ with these concrete definitions finds the parts of the input that are responsible for the failure. If the input itself is faulty the error will be revealed directly. If the error lies within the program the algorithm delivers a starting point for manually debugging the error.
 
-Consider as an example the C program \reffail\ which caused the GNU C Compiler (GCC) in version 2.95.2 (on Intel-Linux with optimization enabled) to crash. The program looks like correct C code that should be compiled properly. We'd like to use Delta Debugging to find out which part of \reffail\ is responsible for the crash. An empty C program is regarded as the \yd\ state and \reffail\ as the \td\ state. A change is defined as a C language token. $\C$ is comprised of all tokens in \reffail. As depicted in \ref{fig:ddponfail} \ddp\ only takes 21 tests to find out that the C tokens "$+ 1.0$" are a minimal failure-inducing set of changes.
+Consider as an example the C program \reffail\ which caused the GNU C Compiler (GCC) in version 2.95.2 (on Intel-Linux with optimization enabled) to crash. The program looks like correct C code that should be compiled properly. We'd like to use Delta Debugging to find out which part of \reffail\ is responsible for the crash. An empty C program is regarded as the \yd\ state and \reffail\ as the \td\ state. A change is defined as a C language token. $\C$ is comprised of all tokens in \reffail. As depicted in Figure \ref{fig:ddponfail} \ddp\ only takes 21 tests to find out that the C tokens "$+ 1.0$" are a minimal failure-inducing set of changes.
 \\
 \begin{figure}[h!]
 	\fbox{
 		\begin{minipage}{\textwidth}
-		\begin{centering}
-			\begin{algorithmic}[1]
-					\State double \textbf{mult}(double z[], int n)
-					\State $\{$
-					\State \quad int i,j;
-					\State \quad i = 0;
-					\State \quad for(j = 0; j < n; j++) $\{$
-					\State \quad \quad i = i + j + 1;
-					\State \quad \quad z[i] = z[i] * (z[0] + 1.0);
-					\State \quad $\}$
-					\State \quad return z[n];
-					\State $\}$
-			\end{algorithmic}
+		\begin{centering}\texttt{
+					\begin{algorithmic}[1]
+							\State double \textbf{mult}(double z[], int n)
+							\State $\{$
+							\State \quad int i,j;
+							\State \quad i = 0;
+							\State \quad for(j = 0; j < n; j++) $\{$
+							\State \quad \quad i = i + j + 1;
+							\State \quad \quad z[i] = z[i] * (z[0] + 1.0);
+							\State \quad $\}$
+							\State \quad return z[n];
+							\State $\}$
+					\end{algorithmic}}
 		\end{centering}
 		\end{minipage}
 	}
@@ -404,14 +412,14 @@ Consider as an example the C program \reffail\ which caused the GNU C Compiler (
 
 \subsection{Program runtime analysis}
 
-It can be of great help for the software developer to be able to automatically determine the specific parts of the program input that cause the failure. The information gathered from the above method can be used by the developer to manually trace the responsible input data to the crash. Considering how a minuscule input change can cause entirely different execution paths this task is tedious if not impossible.
-Delta Debugging can help trace the error from the root to the failure during program execution as well, though. Given a test framework that is able to access \hyperref[def:program_state]{program states} during execution, DD is used on the program states of two \hyperref[def:program_run]{program runs} \rpass\ and \rfail\ at significant locations to deduce a \textit{Cause-Effect-Chain (CEC)}.
+It can be of great help for the software developer to automatically determine the specific parts of the program input that cause the failure. The information gathered from the above method can be used by the developer to manually trace the responsible input data to the crash. Considering how a minuscule input change can cause entirely different execution paths this task is tedious if not impossible.
+Delta Debugging can help trace the error from the root to the failure during program execution as well, though. Given a debugging framework that is able to access \hyperref[def:program_state]{program states} during execution, DD is used on the program states of two \hyperref[def:program_run]{program runs} \rpass\ and \rfail\ at significant locations to deduce a \textit{Cause-Effect-Chain (CEC)}.
 
 The entire program execution is determined by a set of circumstances. We focus on changeable circumstances, more specifically the circumstances that influence the test outcome. A program run, i.e. one specific sequence of program states, is determined only by the set of circumstances that induce the specific run.
 
-\definition \label{def:program_run} \defsub{Circumstances and program runs} Let $R$ be the set of all possible circumstance configurations. A run is defined as a configuration of circumstances, so every $r \in R$ is called a run.\\
+\definition \label{def:program_run} \defsub{Circumstances and program runs} Let $R$ be the set of all possible circumstance configurations. A (program) run is defined as a configuration of circumstances, so every $r \in R$ is called a run.\\
 
-For our intents and purposes it is sufficient to only consider the program input as the changeable circumstances as we assume the error lies within the program code and occurs independently of operating systems, hardware and other environmental factors.  
+For our intents and purposes it is sufficient to only consider the program input as the changeable circumstances as we assume the error lies within the program code and occurs independently of operating systems, hardware and other environmental factors. Thus, in our case a program run is equivalent to just the specific input that induces the program run.
 
 \definition \label{def:program_state} \defsub{Program states} A program state $p$ is a set of \textit{(variable, value)} pairs that unambiguously determine further program execution. The program state always corresponds to a specific point in a \hyperref[def:program_run]{program run}.\\
 
@@ -419,18 +427,18 @@ In order to use Delta Debugging on program states we need to once again define c
 
 \begin{itemize}
 	\item We assume a program run \rfail\ based on some known faulty input that crashes the program with a certain error. We further assume knowledge of a passing program run \rpass\ that runs and terminates correctly.
-	\item We use Delta Debugging to compare program states of \rfail\ and \rpass\ at multiple significant locations \footnote{The number of comparisons vary depending on program size. It defines the granularity of the resulting Cause-Effect-Chain. The location of a comparison should give an overview of the state of the execution and should be reached by most program runs. The locations define the informative power of the Cause Effect Chain.}. Each time Delta Debugging is used the program state \sfail\ of \rfail\ is regarded as \td\ and the state \spass\ of \rpass\ is regarded as \yd.
+	\item We use Delta Debugging repeatedly to compare program states of \rfail\ and \rpass\ at multiple significant locations \footnote{The number of comparisons vary depending on program size. It defines the granularity of the resulting Cause-Effect-Chain. The location of a comparison should give an overview of the state of the execution and should be reached by most program runs. The locations define the informative power of the Cause-Effect-Chain.}. Each time Delta Debugging is used the program state \sfail\ of \rfail\ is regarded as \td\ and the state \spass\ of \rpass\ is regarded as \yd.
 	\item A change between two program states is defined as either a different value of a variable or a variable that only exists in one program state.
-	\item The set $\C$ contains all such changes between \spass\ and \sfail\ for each comparison.
+	\item The set $\C$ contains all such changes between \spass\ and \sfail\ for each comparison, i.e. each individual execution of Delta Debugging.
 	\item The \textit{test} function models further program execution from a given program state. It returns \xmark\ if the program crashes with the exact known error and \cmark\ if the program terminates correctly. In all other cases \qmark\ is returned (e.g. a crash with a different error). 
 \end{itemize}
 
-The definition of the test function makes evident why a testing framework is needed. We need to be able to extract the program state \spass\ of \rpass\ and \sfail\ of \rfail\ at a certain point in order to compare them. More importantly, though, the program code needs to be executed from that point repeatedly with different program states. The states might even be artificial, i.e. they are created by applying arbitrary subsets of $\C$ to \spass\ and would never occur in any run without outside interference. In that case unexpected behavior will occur and memory leaks are likely. The framework needs to make sure no harm is done to the machine or other software. Frameworks for testing and analyzing program execution with these capabilities luckily do exist already, though.
+The definition of the test function makes evident why a debugging framework is needed. We need to be able to extract the program state \spass\ of \rpass\ and \sfail\ of \rfail\ at a certain point in order to compare them. More importantly, though, the program code needs to be executed from that point repeatedly with different program states. The states might even be artificial, i.e. they are created by applying arbitrary subsets of $\C$ to \spass\ and would never occur in any run without outside interference. In that case unexpected behaviour is inevitable and memory leaks are likely. The framework needs to make sure no harm is done to the machine or other software.
 
 Given the above concrete definitions the \hyperref[fig:ddp]{\ddp} algorithm can be used repeatedly to compare \rpass\ and \rfail. The result of each execution of \ddp\ will be a set of \textit{(variable, value)} pairs in \sfail\ that are responsible for the failure down the line. A Cause-Effect-Chain from the input to the failure is then created by chaining together the results of each state comparison. The CEC can give a detailed look into the root cause of the error.\\
 
-Consider as an example the above example program \reffail\ that crashes GCC. Applying GCC on $fail.c$ is regarded as \rfail\ and applying GCC to an empty C program as \rpass\ (compiling no code obviously terminates correctly). Andreas Zeller's experimental \textit{HOWCOME} algorithm\footnote{The \textit{HOWCOME} algorithm uses Delta Debugging as described above and incorporates technical issues like the extraction of program states and applying the test and analysis framework \cite{Zeller:2002:ICC:587051.587053}.}
-compares the runs at the function \textit{main} shortly after the start of the program, at the function $combine\_instructions$ in the middle of the program run and at the last hit of the function $if\_then\_else\_cond$ shortly before the failure. \textit{HOWCOME} yields a \hyperref[fig:failcec]{Cause-Effect-Chain} that includes the comparisons at those locations.
+Consider as an example the above example program \reffail\ that crashes GCC. Applying GCC on $fail.c$ is regarded as \rfail\ and applying GCC to an empty C program as \rpass\ (compiling no code obviously terminates correctly). Andreas Zeller's experimental \textit{HOWCOME} algorithm\footnote{The \textit{HOWCOME} algorithm uses Delta Debugging as described above and incorporates technical issues like the extraction of program states and applying the debugging framework \cite{Zeller:2002:ICC:587051.587053}.}
+compares the runs at the function \textit{main} shortly after the start of the program, at the function $combine\_instructions$ and at each hit of the function $if\_then\_else\_cond$. \textit{HOWCOME} yields a \hyperref[fig:failcec]{Cause-Effect-Chain} that includes the comparisons at those locations as shown in Figure \ref{fig:failcec}.
 
 \begin{figure}[h!]
 	\fbox{
@@ -443,7 +451,7 @@ compares the runs at the function \textit{main} shortly after the start of the p
 			\end{enumerate}
 		\end{minipage}
 	}
-	\caption{The Cause-Effect-Chain that is deduced by \textit{HOWCOME} for \reffail\ \cite{Zeller:2002:ICC:587051.587053}.}
+	\caption{The Cause-Effect-Chain that is deduced by \textit{HOWCOME} for \reffail\ \cite{Zeller:2002:ICC:587051.587053}. Only the last hit of $if\_then\_else\_cond$ is shown.}
 	\label{fig:failcec}
 \end{figure}
 
@@ -453,11 +461,11 @@ The CEC contains the cause for the failure but the fault in the program has to b
 
 \subsection{Minimizing random unit test cases}
 
-An important part of software testing today is randomized tests. Given a unit under test (UUT) a randomized test case generator will create random sequences of instructions to the UUT with randomized input data. The test driver will use the generated sequences to test the functionality of the UUT even under implausible circumstances. Non-randomized test drivers with test cases written by the programmer will not be able to cover all these cases.
+An important part of software testing today is randomized tests. Given a unit under test (UUT) a randomized test case generator will create random sequences of instructions to the UUT with randomized input data. The test driver will use the generated sequences to test the functionality of the UUT even under implausible circumstances. Non-randomized test drivers with test cases written by the programmer will not be able to cover all these cases \cite{Lei:2005:MRU:1104997.1105255}.
 
 The problem with randomized unit testing is that the randomly generated failing test cases are often not useful for the programmer. When debugging the code, the failing test cases hold little value as they tend to contain lots of unnecessary instructions, which hides the reason for the failure. 
 
-After generating random test cases it would be useful to minimize the failing test cases so they only contain the instructions that are relevant for inducing the failure. This is where Delta Debugging comes to play (\cite{Lei:2005:MRU:1104997.1105255}): By viewing a empty test case as the \yd\ state and the randomly generated failing test case as the \td\ state, we can apply a Delta Debugging algorithm to minimize the test case. We define the abstract DD concepts in this context more concretely:
+After generating random test cases it would be useful to minimize the failing test cases so they only contain the instructions that are relevant for inducing the failure. This is where Delta Debugging comes to play (\cite{Lei:2005:MRU:1104997.1105255}): By viewing an empty test case as the \yd\ state and the randomly generated failing test case as the \td\ state, we can apply a Delta Debugging algorithm to minimize the test case. We define the abstract DD concepts in this context more concretely:
 
 \begin{itemize}
 	\item Every instruction in the randomly generated failing test case is regarded as one change.
@@ -465,10 +473,10 @@ After generating random test cases it would be useful to minimize the failing te
 	\item The \textit{test} function models the execution of the instructions in the test driver. The instructions are always executed in the same order as they were in the original randomly generated failing test case. 
 \end{itemize}
 
-Both \hyperref[fig:ddp]{\ddp} and \hyperref[fig:dddiff]{\dddiff} can be used in this scenario. \ddp\ will return a minimal sequence of instruction that induces the same error as the original test case whereas \dddiff\ returns two test cases, one passing and one failing, with a minimal difference. \dddiff\ will likely be more efficient (\cite{Zeller:2002:SIF:506201.506206})
+Both \hyperref[fig:ddp]{\ddp} and \hyperref[fig:dddiff]{\dddiff} can be used in this scenario. \ddp\ will return a minimal sequence of instructions that induces the same error as the original test case whereas \dddiff\ returns two test cases, one passing and one failing, with a minimal difference. \dddiff\ will likely be more efficient (\cite{Zeller:2002:SIF:506201.506206})
  but it remains a matter of context which result is more useful for the debugging of the program code.\\
 
-Static slicing can be initially applied to the test cases to improve the runtime of the test case minimization. In static slicing Read-Write-Data-Dependencies between the instructions are analyzed and only the instructions that could influence the last instruction remain in the test. This method is a static analysis of the test cases, meaning it does not actually need to execute the tests in order to find instructions that are irrelevant for the failure. This gives static slicing a runtime advantage compared to minimization by Delta Debugging. At the same time static slicing is not as effective as DD minimization. A combination of both, that is first applying static slicing and then DD minimization, will retain the advantages of both methods, though: It has a lower runtime but is just as efficient as DD minimization \cite{Leitner:2007:EUT:1321631.1321698}.
+Static slicing can be initially applied to the test cases to improve the runtime of the test case minimization. In static slicing Read-Write-Data-Dependencies between the instructions are analyzed and only the instructions that could influence the last instruction remain in the test. This method is a static analysis of the test cases, meaning it does not actually need to execute the tests in order to find instructions that are irrelevant for the failure. This gives static slicing a runtime advantage compared to minimization by Delta Debugging. At the same time static slicing is not as effective as DD minimization. A combination of both, i.e. first applying static slicing and then DD minimization, will retain the advantages of both methods, though: It has a lower runtime but is just as efficient as DD minimization \cite{Leitner:2007:EUT:1321631.1321698}.
 
 \section{Contribution}
 \label{sec:contribution}
