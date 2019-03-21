@@ -1,9 +1,10 @@
 @echo off
 	set SOURCE=article
+	set OUT=M6-Delta_Debugging
 
-	pdflatex .\%SOURCE%.tex
-	bibtex .\%SOURCE%
-	pdflatex .\%SOURCE%.tex
+	pdflatex .\%SOURCE%.tex --jobname=%OUT%
+	bibtex .\%OUT%
+	pdflatex .\%SOURCE%.tex --jobname=%OUT%
 
 	del -f .\*.vrb
 	del -f .\*.log
@@ -15,4 +16,4 @@
 	del -f .\*.zip
 	del -f .\*~
 
-	start .\%SOURCE%.pdf
+	start .\%OUT%.pdf
